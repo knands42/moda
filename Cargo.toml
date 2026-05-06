@@ -1,0 +1,22 @@
+[package]
+name = "moda"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "moda"
+path = "src/main.rs"
+
+[lib]
+name = "moda"
+path = "src/lib.rs"
+
+[dependencies]
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+dirs = "6.0"
+iced = "0.13"
+
+[dev-dependencies]
+tempfile = "3.0"
