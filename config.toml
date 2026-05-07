@@ -1,0 +1,5 @@
+[game_search_paths]
+stardew_valley = [
+    "/home/user/.steam/steam/steamapps/common/Stardew Valley",
+    "/opt/games/stardew"
+]

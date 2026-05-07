@@ -7,8 +7,8 @@ Mod manager for Linux built with Rust + Iced. Starting with Stardew Valley, desi
 ```bash
 cargo init --name modmanager          # Initialize project (if not done)
 cargo run --bin modmanager            # Run the app
-cargo test                           # Run all tests
-cargo test --test <test_name>        # Run single test file
+cargo tdd-scaffold                           # Run all tests
+cargo tdd-scaffold --tdd-scaffold <test_name>        # Run single tdd-scaffold file
 cargo clippy -- -D warnings          # Lint (fail on warnings)
 cargo fmt -- --check                 # Check formatting
 ```
