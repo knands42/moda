@@ -1,4 +1,3 @@
-use std::fmt::write;
 use std::io;
 use std::path::PathBuf;
 
@@ -11,16 +10,22 @@ pub enum ModManagerError {
 
     IoError(io::Error),
     InvalidMod(String),
-    NexusApiError(String)
+    NexusApiError(String),
 }
 
 impl std::fmt::Display for ModManagerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ModManagerError::GameNotFound(game) => write!(f, "Game not found: {}", game),
-            ModManagerError::PathNotFound(path) => write!(f, "Path not found: {}", path.to_string_lossy()),
-            ModManagerError::InvalidConfiguration(err) => write!(f, "Invalid configuration: {}", err),
-            ModManagerError::PathDiscoveryFailed(err) => write!(f, "Path"),
+            ModManagerError::PathNotFound(path) => {
+                write!(f, "Path not found: {}", path.to_string_lossy())
+            }
+            ModManagerError::InvalidConfiguration(err) => {
+                write!(f, "Invalid configuration: {}", err)
+            }
+            ModManagerError::PathDiscoveryFailed(path) => {
+                write!(f, "Path discovery failed: {}", path)
+            }
             ModManagerError::IoError(e) => write!(f, "IO error: {}", e),
             ModManagerError::InvalidMod(s) => write!(f, "Invalid mod: {}", s),
             ModManagerError::NexusApiError(s) => write!(f, "Nexus API error: {}", s),

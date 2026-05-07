@@ -1,12 +1,13 @@
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub game_search_paths: HashMap<String, Vec<PathBuf>>
+    pub game_search_paths: HashMap<String, Vec<PathBuf>>,
 }
 
+#[allow(dead_code)]
 pub fn load_config() -> Option<Config> {
     let path = dirs::config_dir()?.join("modmanager").join("config.toml");
     let text = std::fs::read_to_string(&path).ok()?;

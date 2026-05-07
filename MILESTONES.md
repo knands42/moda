@@ -8,7 +8,7 @@ Follow TDD: write tests first, then implement. Run `cargo clippy && cargo fmt --
    - Define `Game` and `Mod` traits (per AGENTS.md)
    - *Completion check*: `cargo test` passes, `cargo clippy` clean
 
-2. [ ] **Stardew Valley Game Module**
+2. [x] **Stardew Valley Game Module**
    - Implement `Game` trait for Stardew Valley (`games/stardew.rs`)
    - Add game path discovery (registry/system paths)
    - Write tests for game detection and path validation
