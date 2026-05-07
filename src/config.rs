@@ -1,10 +1,11 @@
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
     pub game_search_paths: HashMap<String, Vec<PathBuf>>,
+    pub nexus_api_key: String,
 }
 
 #[allow(dead_code)]
