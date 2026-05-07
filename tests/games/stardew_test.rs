@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 use moda::games::Game;
 use moda::games::StardewValley;
+use std::path::PathBuf;
 
 #[test]
 fn test_new_creates_instance() {
