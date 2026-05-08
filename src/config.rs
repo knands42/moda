@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Config {
     pub nexus_api_key: String,
     pub mods_root_path: String,
@@ -12,7 +12,7 @@ pub struct Config {
 
 #[allow(dead_code)]
 pub fn load_config() -> Option<Config> {
-    let path = dirs::config_dir()?.join("modmanager").join("config.toml");
+    let path = dirs::config_dir()?.join("moda").join("config.toml");
     let text = std::fs::read_to_string(&path).ok()?;
     let config: Config = toml::from_str(&text).ok()?;
 

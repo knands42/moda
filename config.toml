@@ -1,9 +1,8 @@
 nexus_api_key = "your-key-here"
-mods_root_path = ""
-staging_root_path = ""
+mods_root_path = "/home/user/.moda/mods"
+staging_root_path = "/home/user/.moda/staging"
 
 [game_search_paths]
 stardew_valley = [
-    "/home/user/.steam/steam/steamapps/common/Stardew Valley",
-    "/opt/games/stardew"
+    "/home/user/.steam/steam/steamapps/common/Stardew Valley"
 ]

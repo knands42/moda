@@ -17,7 +17,7 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn stage_mods(&self) -> Result<(), ModManagerError> {
-        for entry in fs::read_dir(self.get_mod_path())? {
+        for entry in fs::read_dir(&self.get_mod_path())? {
             let source_path = entry?;
             self.stage_one_mod(source_path)?;
         }
@@ -35,7 +35,7 @@ impl<G: Game> SyncManager<G> {
         } else if source_path
             .path()
             .extension()
-            .map_or(false, |ext| ext == "zip")
+            .is_some_and(|ext| ext == "zip")
         {
             Installer::install(
                 &ModSource::LocalZip(source_path.path()),
@@ -48,7 +48,7 @@ impl<G: Game> SyncManager<G> {
 
     pub fn enable_mods(&self) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
-        for entry in fs::read_dir(staging_path)? {
+        for entry in fs::read_dir(&staging_path)? {
             let source_path = entry?;
             self.enable_one_mod(source_path)?;
         }
@@ -58,7 +58,7 @@ impl<G: Game> SyncManager<G> {
 
     pub fn enable_one_mod(&self, source_path: DirEntry) -> Result<(), ModManagerError> {
         let game_mods_path = self.game.game_mod_path();
-        Enabler::activate(source_path.path().as_path(), game_mods_path.as_path())?;
+        Enabler::activate(source_path.path().as_path(), game_mods_path.join(source_path.file_name()).as_path())?;
 
         Ok(())
     }

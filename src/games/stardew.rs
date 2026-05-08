@@ -1,3 +1,4 @@
+use std::fs;
 use crate::games::Game;
 use std::path::PathBuf;
 
@@ -7,6 +8,12 @@ pub struct StardewValley {
 
 impl StardewValley {
     pub fn new(game_path: PathBuf) -> Self {
+        let mods_path = game_path.join("Mods");
+
+        if !mods_path.exists() {
+            fs::create_dir_all(&mods_path).ok();
+        }
+
         Self { game_path }
     }
 }
