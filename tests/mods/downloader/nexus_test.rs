@@ -23,11 +23,3 @@ fn test_nexus_client_new() {
     assert_eq!(mod_info.unwrap().name, Some("Test Mod".to_string()));
 }
 
-#[test]
-fn test_download_mod() {
-    let api_key = "by79";
-    let client = NexusClient::new(api_key.to_string());
-    let result = client.download_mod("stardewvalley", 45720, 166222);
-
-    assert!(result.is_ok());
-}

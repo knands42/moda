@@ -1,14 +1,14 @@
-use std::fs;
-use std::fs::DirEntry;
-use std::path::PathBuf;
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
 use crate::mods::{Enabler, Installer, ModSource};
+use std::fs;
+use std::fs::DirEntry;
+use std::path::PathBuf;
 
 pub struct SyncManager<G: Game> {
     game: G,
-    config: Config
+    config: Config,
 }
 
 impl<G: Game> SyncManager<G> {
@@ -28,10 +28,19 @@ impl<G: Game> SyncManager<G> {
     pub fn stage_one_mod(&self, source_path: DirEntry) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
         if source_path.file_type()?.is_dir() {
-            Installer::install(&ModSource::LocalDir(source_path.path()), staging_path.as_path())?;
-
-        } else if source_path.path().extension().map_or(false, |ext| ext == "zip") {
-            Installer::install(&ModSource::LocalZip(source_path.path()), staging_path.as_path())?;
+            Installer::install(
+                &ModSource::LocalDir(source_path.path()),
+                staging_path.as_path(),
+            )?;
+        } else if source_path
+            .path()
+            .extension()
+            .map_or(false, |ext| ext == "zip")
+        {
+            Installer::install(
+                &ModSource::LocalZip(source_path.path()),
+                staging_path.as_path(),
+            )?;
         }
 
         Ok(())

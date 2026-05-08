@@ -1,10 +1,8 @@
-use moda::games::StardewValley;
 use moda::mods::{Installer, ModSource};
 use std::fs::File;
 use std::io::Write;
-use tempfile::env::temp_dir;
 use tempfile::tempdir;
-use zip::write::{FileOptions, SimpleFileOptions};
+use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
 #[test]

@@ -63,17 +63,18 @@ impl NexusClient {
         Ok(wrapper.data)
     }
 
-
     pub fn download_mod(
         &self,
         game_domain: &str,
         mod_id: u64,
         file_id: u64,
     ) -> Result<Vec<u8>, ModManagerError> {
-        let url = format!("{}/games/{game_domain}/mods/{mod_id}files/{file_id}", nexus_api_base());
+        let url = format!(
+            "{}/games/{game_domain}/mods/{mod_id}files/{file_id}",
+            nexus_api_base()
+        );
 
-        self
-            .client
+        self.client
             .get(&url)
             .header("apikey", &self.api_key)
             .send()

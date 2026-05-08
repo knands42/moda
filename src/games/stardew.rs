@@ -3,17 +3,11 @@ use std::path::PathBuf;
 
 pub struct StardewValley {
     game_path: PathBuf,
-    mods_path: PathBuf,
-    staging_path: PathBuf,
 }
 
 impl StardewValley {
-    pub fn new(game_path: PathBuf, mods_path: PathBuf, staging_path: PathBuf) -> Self {
-        Self {
-            game_path,
-            mods_path,
-            staging_path,
-        }
+    pub fn new(game_path: PathBuf) -> Self {
+        Self { game_path }
     }
 }
 

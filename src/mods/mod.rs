@@ -1,6 +1,6 @@
+pub mod downloader;
 mod enabler;
 mod installer;
-pub mod downloader;
 mod sync_manager;
 
 pub use enabler::Enabler;

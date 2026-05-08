@@ -4,24 +4,15 @@ use std::path::PathBuf;
 
 #[test]
 fn test_new_creates_instance() {
-    let sv = StardewValley::new(
-        PathBuf::from("/games/stardew"),
-        PathBuf::from("/mods/stardew"),
-        PathBuf::from("/staging/stardew"),
-    );
+    let sv = StardewValley::new(PathBuf::from("/games/stardew"));
     assert_eq!(sv.name(), "Stardew Valley");
 }
 
 #[test]
 fn test_path_getters() {
-    let sv = StardewValley::new(
-        PathBuf::from("/games/stardew"),
-        PathBuf::from("/mods/stardew"),
-        PathBuf::from("/staging/stardew"),
-    );
+    let sv = StardewValley::new(PathBuf::from("/games/stardew"));
     assert_eq!(sv.game_path(), PathBuf::from("/games/stardew"));
-    assert_eq!(sv.mods_path(), PathBuf::from("/mods/stardew"));
-    assert_eq!(sv.staging_path(), PathBuf::from("/staging/stardew"));
+    assert_eq!(sv.game_mod_path(), PathBuf::from("/games/stardew/Mods"));
 }
 
 #[test]
