@@ -21,4 +21,5 @@ zip = "8.6.0"
 serde = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
+mockito = "1.5"
 tempfile = "3.0"

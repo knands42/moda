@@ -2,8 +2,8 @@ mod stardew;
 
 pub use stardew::StardewValley;
 
-use std::path::PathBuf;
 use crate::config::Config;
+use std::path::PathBuf;
 
 pub trait Game {
     fn name(&self) -> &str;

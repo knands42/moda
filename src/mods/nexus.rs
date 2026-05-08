@@ -1,8 +1,10 @@
-use serde::Deserialize;
 use crate::error::ModManagerError;
+use serde::Deserialize;
 
 #[allow(dead_code)]
-const NEXUS_API_BASE: &str = "https://api.nexusmods.com/v3";
+fn nexus_api_base() -> String {
+    std::env::var("NEXUS_API_BASE").unwrap_or_else(|_| "https://api.nexusmods.com/v3".to_string())
+}
 
 #[allow(dead_code)]
 pub struct NexusClient {
@@ -12,7 +14,7 @@ pub struct NexusClient {
 
 #[derive(Deserialize)]
 struct NexusApiResponse<T> {
-    data: T
+    data: T,
 }
 
 #[derive(Deserialize)]
@@ -20,7 +22,7 @@ pub struct NexusModInfo {
     pub id: String,
     pub game_scoped_id: String,
     pub game_id: String,
-    pub name: Option<String>
+    pub name: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -53,15 +55,18 @@ impl NexusClient {
         game_domain: &str,
         mod_id: u64,
     ) -> Result<NexusModInfo, ModManagerError> {
-        let url = format!("{NEXUS_API_BASE}/games/{game_domain}/mods/{mod_id}");
+        let url = format!("{}/games/{game_domain}/mods/{mod_id}", nexus_api_base());
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("apikey", &self.api_key)
             .send()
             .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
 
-        let wrapper: NexusApiResponse<NexusModInfo> = response.json().map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
+        let wrapper: NexusApiResponse<NexusModInfo> = response
+            .json()
+            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
 
         Ok(wrapper.data)
     }
@@ -82,16 +87,20 @@ impl NexusClient {
         mod_id: u64,
         file_id: u64,
     ) -> Result<Vec<u8>, ModManagerError> {
-        let url = format!("{NEXUS_API_BASE}/mods/{game_domain}/{mod_id}/files/{file_id}");
+        let url = format!("{}/games/{game_domain}/mods/{mod_id}/files/{file_id}/download_links.json", nexus_api_base());
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("apikey", &self.api_key)
             .send()
             .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
 
-        let wrapper: NexusApiResponse<NexusModInfo> = response.json().map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
+        let wrapper: NexusApiResponse<NexusModInfo> = response
+            .json()
+            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
 
+        wrapper.data;
         todo!()
     }
 }
