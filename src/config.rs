@@ -6,7 +6,7 @@ use std::path::PathBuf;
 pub struct Config {
     pub nexus_api_key: String,
     pub mods_root_path: String,
-    pub stock_root_path: String,
+    pub staging_root_path: String,
     pub game_search_paths: HashMap<String, Vec<PathBuf>>,
 }
 

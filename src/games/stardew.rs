@@ -4,15 +4,15 @@ use std::path::PathBuf;
 pub struct StardewValley {
     game_path: PathBuf,
     mods_path: PathBuf,
-    stock_path: PathBuf,
+    staging_path: PathBuf,
 }
 
 impl StardewValley {
-    pub fn new(game_path: PathBuf, mods_path: PathBuf, stock_path: PathBuf) -> Self {
+    pub fn new(game_path: PathBuf, mods_path: PathBuf, staging_path: PathBuf) -> Self {
         Self {
             game_path,
             mods_path,
-            stock_path,
+            staging_path,
         }
     }
 }
@@ -30,8 +30,8 @@ impl Game for StardewValley {
         self.mods_path.clone()
     }
 
-    fn stock_path(&self) -> PathBuf {
-        self.stock_path.clone()
+    fn staging_path(&self) -> PathBuf {
+        self.staging_path.clone()
     }
 
     fn registry_id() -> &'static str {

@@ -37,10 +37,8 @@ moda/
 │   │   ├── mod.rs           # Re-exports Installer & NexusClient
 │   │   ├── nexus.rs         # Nexus API client
 │   │   └── installer.rs     # Mod installation logic (ModSource enum + Installer struct)
-│   ├── profiles/
-│   │   └── mod.rs           # Profile management (stub)
-│   └── stock/
-│       └── mod.rs           # Stock game folder management (stub)
+│   └── profiles/
+│       └── mod.rs           # Profile management (stub)
 └── tests/
     ├── mod.rs
     ├── games/
@@ -59,7 +57,7 @@ pub trait Game {
     fn name(&self) -> &str;
     fn game_path(&self) -> PathBuf;
     fn mods_path(&self) -> PathBuf;
-    fn stock_path(&self) -> PathBuf;
+    fn staging_path(&self) -> PathBuf;
     fn discover_path(config: &Config) -> Option<PathBuf>;
     fn registry_id() -> &'static str;
 }

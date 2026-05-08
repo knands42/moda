@@ -7,7 +7,7 @@ fn test_new_creates_instance() {
     let sv = StardewValley::new(
         PathBuf::from("/games/stardew"),
         PathBuf::from("/mods/stardew"),
-        PathBuf::from("/stock/stardew"),
+        PathBuf::from("/staging/stardew"),
     );
     assert_eq!(sv.name(), "Stardew Valley");
 }
@@ -17,11 +17,11 @@ fn test_path_getters() {
     let sv = StardewValley::new(
         PathBuf::from("/games/stardew"),
         PathBuf::from("/mods/stardew"),
-        PathBuf::from("/stock/stardew"),
+        PathBuf::from("/staging/stardew"),
     );
     assert_eq!(sv.game_path(), PathBuf::from("/games/stardew"));
     assert_eq!(sv.mods_path(), PathBuf::from("/mods/stardew"));
-    assert_eq!(sv.stock_path(), PathBuf::from("/stock/stardew"));
+    assert_eq!(sv.staging_path(), PathBuf::from("/staging/stardew"));
 }
 
 #[test]

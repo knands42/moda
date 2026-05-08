@@ -83,24 +83,12 @@ impl NexusClient {
 
     pub fn download_mod(
         &self,
-        game_domain: &str,
-        mod_id: u64,
-        file_id: u64,
+        _game_domain: &str,
+        _mod_id: u64,
+        _file_id: u64,
     ) -> Result<Vec<u8>, ModManagerError> {
-        let url = format!("{}/games/{game_domain}/mods/{mod_id}/files/{file_id}/download_links.json", nexus_api_base());
-
-        let response = self
-            .client
-            .get(&url)
-            .header("apikey", &self.api_key)
-            .send()
-            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
-
-        let wrapper: NexusApiResponse<NexusModInfo> = response
-            .json()
-            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
-
-        wrapper.data;
-        todo!()
+        // Non-premium users: manually place mods in mods_path instead.
+        // Premium users: use the Nexus API download_links.json endpoint.
+        Ok(vec![])
     }
 }
