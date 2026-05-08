@@ -26,12 +26,8 @@ impl Game for StardewValley {
         self.game_path.clone()
     }
 
-    fn mods_path(&self) -> PathBuf {
-        self.mods_path.clone()
-    }
-
-    fn staging_path(&self) -> PathBuf {
-        self.staging_path.clone()
+    fn game_mod_path(&self) -> PathBuf {
+        self.game_path.join("Mods")
     }
 
     fn registry_id() -> &'static str {
