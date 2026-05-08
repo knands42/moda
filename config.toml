@@ -1,4 +1,6 @@
 nexus_api_key = "your-key-here"
+mods_root_path = ""
+stock_root_path = ""
 
 [game_search_paths]
 stardew_valley = [

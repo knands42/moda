@@ -5,10 +5,10 @@ Mod manager for Linux built with Rust + Iced. Starting with Stardew Valley, desi
 
 ## Developer Commands
 ```bash
-cargo init --name modmanager          # Initialize project (if not done)
-cargo run --bin modmanager            # Run the app
-cargo tdd-scaffold                           # Run all tests
-cargo tdd-scaffold --tdd-scaffold <test_name>        # Run single tdd-scaffold file
+cargo init --name moda                # Initialize project (if not done)
+cargo run --bin moda                  # Run the app
+cargo test                            # Run all tests
+cargo test <test_name>                # Run single test
 cargo clippy -- -D warnings          # Lint (fail on warnings)
 cargo fmt -- --check                 # Check formatting
 ```
@@ -21,32 +21,35 @@ cargo fmt -- --check                 # Check formatting
 - **Profile-based**: Support multiple profiles per game from the start
 - **Mod collections**: Support both native JSON format and Nexus collections import
 
-### Suggested Crate Structure
+### Current Crate Structure
 ```
-modmanager/
+moda/
 ├── Cargo.toml
 ├── src/
 │   ├── main.rs              # Iced app entrypoint
-│   ├── lib.rs               # 
-│   ├── app.rs               # Main application state/ui
+│   ├── lib.rs               # Re-exports public modules
+│   ├── config.rs            # Config loading from ~/.config/modmanager/config.toml
 │   ├── error.rs             # Error handling
 │   ├── games/
 │   │   ├── mod.rs           # Game trait definition
-│   │   ├── stardew.rs       # Stardew Valley implementation
-│   │   └── registry.rs      # Game registration/discovery
+│   │   └── stardew.rs       # Stardew Valley implementation
 │   ├── mods/
-│   │   ├── mod.rs           # Mod struct + trait
+│   │   ├── mod.rs           # Re-exports Installer & NexusClient
 │   │   ├── nexus.rs         # Nexus API client
-│   │   └── installer.rs     # Mod installation logic
+│   │   └── installer.rs     # Mod installation logic (ModSource enum + Installer struct)
 │   ├── profiles/
-│   │   └── mod.rs           # Profile management
+│   │   └── mod.rs           # Profile management (stub)
 │   └── stock/
-│       └── mod.rs           # Stock game folder management
+│       └── mod.rs           # Stock game folder management (stub)
 └── tests/
-    ├── games/*.rs
-    ├── mods/*.rs
-    ├── profiles/*.rs
-    └── stock/*.rs
+    ├── mod.rs
+    ├── games/
+    │   ├── mod.rs
+    │   └── stardew_test.rs
+    └── mods/
+        ├── mod.rs
+        ├── nexus.rs
+        └── installer_test.rs
 ```
 
 ### Key Traits to Define Early
@@ -56,15 +59,9 @@ pub trait Game {
     fn name(&self) -> &str;
     fn game_path(&self) -> PathBuf;
     fn mods_path(&self) -> PathBuf;
-    fn discover_path() -> Option<PathBuf>;
+    fn stock_path(&self) -> PathBuf;
+    fn discover_path(config: &Config) -> Option<PathBuf>;
     fn registry_id() -> &'static str;
-}
-
-// mods/mod.rs
-pub trait Mod {
-    fn id(&self) -> &str;
-    fn install(&self, target: &Path) -> Result<()>;
-    fn validate(&self) -> Result<()>;
 }
 ```
 
