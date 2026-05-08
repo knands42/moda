@@ -1,0 +1,6 @@
+- [ ] Allow games that implement Game trait to have its onw custom installer (e.g., StardewValley should know how to install SMAPI by itself)
+- [ ] Make ICED UI select the game first to mod
+- [ ] Add an option to unstage a mod
+- [ ] Add an option to uninstall a mod
+- [ ] Allow to list mods in staging and in download folders
+- [ ] keep track of whats has been already staged/installed
