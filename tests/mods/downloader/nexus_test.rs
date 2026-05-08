@@ -1,5 +1,5 @@
 use mockito::Server;
-use moda::mods::NexusClient;
+use moda::mods::downloader::NexusClient;
 
 #[test]
 fn test_nexus_client_new() {

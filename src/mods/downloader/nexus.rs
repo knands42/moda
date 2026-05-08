@@ -6,7 +6,6 @@ fn nexus_api_base() -> String {
     std::env::var("NEXUS_API_BASE").unwrap_or_else(|_| "https://api.nexusmods.com/v3".to_string())
 }
 
-#[allow(dead_code)]
 pub struct NexusClient {
     api_key: String,
     client: reqwest::blocking::Client,
@@ -23,13 +22,6 @@ pub struct NexusModInfo {
     pub game_scoped_id: String,
     pub game_id: String,
     pub name: Option<String>,
-}
-
-#[allow(dead_code)]
-pub struct NexusFileInfo {
-    pub file_id: u64,
-    pub name: String,
-    pub category: String,
 }
 
 impl NexusClient {
@@ -71,24 +63,22 @@ impl NexusClient {
         Ok(wrapper.data)
     }
 
-    pub fn get_mod_files(
-        &self,
-        _game_domain: &str,
-        _mod_id: u64,
-    ) -> Result<Vec<NexusFileInfo>, ModManagerError> {
-        Err(ModManagerError::NexusApiError(
-            "Get mod files not yet implemented".into(),
-        ))
-    }
 
     pub fn download_mod(
         &self,
-        _game_domain: &str,
-        _mod_id: u64,
-        _file_id: u64,
+        game_domain: &str,
+        mod_id: u64,
+        file_id: u64,
     ) -> Result<Vec<u8>, ModManagerError> {
-        // Non-premium users: manually place mods in mods_path instead.
-        // Premium users: use the Nexus API download_links.json endpoint.
-        Ok(vec![])
+        let url = format!("{}/games/{game_domain}/mods/{mod_id}files/{file_id}", nexus_api_base());
+
+        self
+            .client
+            .get(&url)
+            .header("apikey", &self.api_key)
+            .send()
+            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
+
+        todo!()
     }
 }
