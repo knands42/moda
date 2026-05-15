@@ -3,3 +3,6 @@ check:
 
 format:
     cargo fmt
+
+test:
+    cargo test

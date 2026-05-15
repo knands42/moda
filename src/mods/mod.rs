@@ -1,7 +1,7 @@
 pub mod downloader;
 mod enabler;
 mod installer;
-mod mod_registry;
+pub mod mod_registry;
 mod sync_manager;
 
 pub use enabler::Enabler;

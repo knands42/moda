@@ -11,7 +11,22 @@ pub struct ModEntry {
     pub kind: ModEntryKind,
 }
 
-#[derive(PartialEq)]
+pub enum ModStatus {
+    Downloaded,
+    Staged,
+    Enabled,
+    Modified
+}
+
+pub struct ReconciledMod {
+    pub name: String,
+    pub status: ModStatus,
+    pub source_entry: Option<ModEntry>,
+    pub staging_entry: Option<ModEntry>,
+    pub game_entry: Option<ModEntry>,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ModEntryKind {
     Directory,
     ZipArchive,
@@ -52,6 +67,10 @@ impl<G: Game> ModRegistry<G> {
     pub fn get_staged_mod_by_name(&self, name: &str) -> Result<ModEntry, ModManagerError> {
         let staged_mods_path = self.get_staging_path();
         self.get_one_mod(staged_mods_path, name)
+    }
+
+    pub fn reconcile(&self) -> Result<Vec<ReconciledMod>, ModManagerError> {
+        Ok(vec![])
     }
 
     fn list_folder(&self, source: PathBuf) -> Result<Vec<ModEntry>, ModManagerError> {
