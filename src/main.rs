@@ -26,38 +26,37 @@ struct App {
 
 impl Default for App {
     fn default() -> Self {
-        let (game_path, mods_path, staging_path, game_mod_path) =
-            match load_config() {
-                Some(config) => {
-                    let discovered = StardewValley::discover_path(&config);
-                    match discovered {
-                        Some(gp) => {
-                            let mods = PathBuf::from(&config.mods_root_path)
-                                .join(StardewValley::registry_id());
-                            let staging = PathBuf::from(&config.staging_root_path)
-                                .join(StardewValley::registry_id());
-                            (
-                                gp.to_string_lossy().to_string(),
-                                mods.to_string_lossy().to_string(),
-                                staging.to_string_lossy().to_string(),
-                                gp.join("Mods").to_string_lossy().to_string(),
-                            )
-                        }
-                        None => (
-                            "Not found".into(),
-                            config.mods_root_path.clone(),
-                            config.staging_root_path.clone(),
-                            "N/A".into(),
-                        ),
+        let (game_path, mods_path, staging_path, game_mod_path) = match load_config() {
+            Some(config) => {
+                let discovered = StardewValley::discover_path(&config);
+                match discovered {
+                    Some(gp) => {
+                        let mods = PathBuf::from(&config.mods_root_path)
+                            .join(StardewValley::registry_id());
+                        let staging = PathBuf::from(&config.staging_root_path)
+                            .join(StardewValley::registry_id());
+                        (
+                            gp.to_string_lossy().to_string(),
+                            mods.to_string_lossy().to_string(),
+                            staging.to_string_lossy().to_string(),
+                            gp.join("Mods").to_string_lossy().to_string(),
+                        )
                     }
+                    None => (
+                        "Not found".into(),
+                        config.mods_root_path.clone(),
+                        config.staging_root_path.clone(),
+                        "N/A".into(),
+                    ),
                 }
-                None => (
-                    "Config not loaded".into(),
-                    String::new(),
-                    String::new(),
-                    String::new(),
-                ),
-            };
+            }
+            None => (
+                "Config not loaded".into(),
+                String::new(),
+                String::new(),
+                String::new(),
+            ),
+        };
 
         App {
             game_path,
@@ -76,8 +75,7 @@ impl App {
 
     fn sync_manager(&self) -> Result<SyncManager<StardewValley>, String> {
         let config = load_config().ok_or("Failed to load config")?;
-        let game_path =
-            StardewValley::discover_path(&config).ok_or("Stardew Valley not found")?;
+        let game_path = StardewValley::discover_path(&config).ok_or("Stardew Valley not found")?;
         let game = StardewValley::new(game_path);
         Ok(SyncManager::new(game, config))
     }
@@ -118,7 +116,13 @@ fn view(app: &App) -> Element<'_, Message> {
     .spacing(10);
 
     let log = scrollable(
-        column(app.log.iter().map(|line| text(line).into()).collect::<Vec<_>>()).spacing(4),
+        column(
+            app.log
+                .iter()
+                .map(|line| text(line).into())
+                .collect::<Vec<_>>(),
+        )
+        .spacing(4),
     )
     .height(300);
 

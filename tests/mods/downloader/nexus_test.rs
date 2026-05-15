@@ -22,4 +22,3 @@ fn test_nexus_client_new() {
     assert!(mod_info.is_ok());
     assert_eq!(mod_info.unwrap().name, Some("Test Mod".to_string()));
 }
-

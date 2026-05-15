@@ -1,5 +1,6 @@
-use std::fs;
+use crate::error::ModManagerError;
 use crate::games::Game;
+use std::fs;
 use std::path::PathBuf;
 
 pub struct StardewValley {
@@ -34,5 +35,10 @@ impl Game for StardewValley {
     fn registry_id() -> &'static str {
         // TODO: where to get/generate registry id
         "stardew_valley"
+    }
+
+    fn pre_setup(&self) -> Result<(), ModManagerError> {
+        // install SMAPI
+        todo!()
     }
 }

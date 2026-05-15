@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::io;
 use std::path::PathBuf;
 
@@ -6,10 +7,12 @@ pub enum ModManagerError {
     GameNotFound(String),
     PathDiscoveryFailed(String),
     InvalidConfiguration(String),
+    InvalidFilename(String),
     PathNotFound(PathBuf),
+    ModNotFound(String),
+    InvalidMod(String),
 
     IoError(io::Error),
-    InvalidMod(String),
     NexusApiError(String),
 }
 
@@ -23,6 +26,12 @@ impl std::fmt::Display for ModManagerError {
             ModManagerError::InvalidConfiguration(err) => {
                 write!(f, "Invalid configuration: {}", err)
             }
+            ModManagerError::InvalidFilename(filename) => {
+                write!(f, "Invalid filename: {}", filename)
+            }
+            ModManagerError::ModNotFound(filename) => {
+                write!(f, "Mod not found: {}", filename)
+            }
             ModManagerError::PathDiscoveryFailed(path) => {
                 write!(f, "Path discovery failed: {}", path)
             }
@@ -35,8 +44,8 @@ impl std::fmt::Display for ModManagerError {
 
 pub type Result<T> = std::result::Result<T, ModManagerError>;
 
-impl From<std::io::Error> for ModManagerError {
-    fn from(e: std::io::Error) -> Self {
+impl From<io::Error> for ModManagerError {
+    fn from(e: io::Error) -> Self {
         ModManagerError::IoError(e)
     }
 }

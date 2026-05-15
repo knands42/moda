@@ -1,64 +1,62 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
+use crate::mods::mod_registry::{ModEntry, ModEntryKind, ModRegistry};
 use crate::mods::{Enabler, Installer, ModSource};
-use std::fs;
-use std::fs::DirEntry;
 use std::path::PathBuf;
 
 pub struct SyncManager<G: Game> {
     game: G,
     config: Config,
+    mod_registry: ModRegistry<G>,
 }
 
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
-        Self { game, config }
+        let mod_registry = ModRegistry::new(config.clone());
+        Self {
+            game,
+            config,
+            mod_registry,
+        }
     }
 
     pub fn stage_mods(&self) -> Result<(), ModManagerError> {
-        for entry in fs::read_dir(&self.get_mod_path())? {
-            let source_path = entry?;
-            self.stage_one_mod(source_path)?;
+        let mods_folder = self.mod_registry.list_mods_folder()?;
+
+        for entry in mods_folder {
+            self.stage_one_mod(entry)?;
         }
 
         Ok(())
     }
 
-    pub fn stage_one_mod(&self, source_path: DirEntry) -> Result<(), ModManagerError> {
+    pub fn stage_one_mod(&self, mod_entry: ModEntry) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
-        if source_path.file_type()?.is_dir() {
-            Installer::install(
-                &ModSource::LocalDir(source_path.path()),
-                staging_path.as_path(),
-            )?;
-        } else if source_path
-            .path()
-            .extension()
-            .is_some_and(|ext| ext == "zip")
-        {
-            Installer::install(
-                &ModSource::LocalZip(source_path.path()),
-                staging_path.as_path(),
-            )?;
+        if mod_entry.kind == ModEntryKind::Directory {
+            Installer::install(&ModSource::LocalDir(mod_entry.path), staging_path.as_path())?;
+        } else if mod_entry.kind == ModEntryKind::ZipArchive {
+            Installer::install(&ModSource::LocalZip(mod_entry.path), staging_path.as_path())?;
         }
 
         Ok(())
     }
 
     pub fn enable_mods(&self) -> Result<(), ModManagerError> {
-        let staging_path = self.get_staging_path();
-        for entry in fs::read_dir(&staging_path)? {
-            let source_path = entry?;
-            self.enable_one_mod(source_path)?;
+        let staging_path = self.mod_registry.list_staging_folder()?;
+        for entry in staging_path {
+            self.enable_one_mod(entry)?;
         }
 
         Ok(())
     }
 
-    pub fn enable_one_mod(&self, source_path: DirEntry) -> Result<(), ModManagerError> {
+    pub fn enable_one_mod(&self, mod_entry: ModEntry) -> Result<(), ModManagerError> {
         let game_mods_path = self.game.game_mod_path();
-        Enabler::activate(source_path.path().as_path(), game_mods_path.join(source_path.file_name()).as_path())?;
+        Enabler::activate(
+            mod_entry.path.as_path(),
+            game_mods_path.join(mod_entry.name).as_path(),
+        )?;
 
         Ok(())
     }
@@ -68,10 +66,6 @@ impl<G: Game> SyncManager<G> {
         self.enable_mods()?;
 
         Ok(())
-    }
-
-    fn get_mod_path(&self) -> PathBuf {
-        PathBuf::from(&self.config.mods_root_path).join(G::registry_id())
     }
 
     fn get_staging_path(&self) -> PathBuf {
