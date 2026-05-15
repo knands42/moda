@@ -2,7 +2,7 @@ use iced::widget::{button, column, row, scrollable, text};
 use iced::Element;
 use moda::config::load_config;
 use moda::games::{Game, StardewValley};
-use moda::mods::SyncManager;
+use moda::mods::{ModState, SyncManager};
 use std::path::PathBuf;
 
 fn main() -> iced::Result {
@@ -21,6 +21,7 @@ struct App {
     mods_path: String,
     staging_path: String,
     game_mod_path: String,
+    mod_state: ModState,
     log: Vec<String>,
 }
 
@@ -63,6 +64,7 @@ impl Default for App {
             mods_path,
             staging_path,
             game_mod_path,
+            mod_state: ModState::default(),
             log: vec!["App started".into()],
         }
     }
@@ -84,21 +86,21 @@ impl App {
 fn update(app: &mut App, message: Message) {
     match message {
         Message::StageMods => match app.sync_manager() {
-            Ok(sm) => match sm.stage_mods() {
+            Ok(sm) => match sm.stage_mods(&mut app.mod_state) {
                 Ok(()) => app.push_log("Mods staged successfully".into()),
                 Err(e) => app.push_log(format!("Stage failed: {e}")),
             },
             Err(e) => app.push_log(format!("Init failed: {e}")),
         },
         Message::EnableMods => match app.sync_manager() {
-            Ok(sm) => match sm.enable_mods() {
+            Ok(sm) => match sm.enable_mods(&mut app.mod_state) {
                 Ok(()) => app.push_log("Mods enabled successfully".into()),
                 Err(e) => app.push_log(format!("Enable failed: {e}")),
             },
             Err(e) => app.push_log(format!("Init failed: {e}")),
         },
         Message::SyncAll => match app.sync_manager() {
-            Ok(sm) => match sm.sync_all() {
+            Ok(sm) => match sm.sync_all(&mut app.mod_state) {
                 Ok(()) => app.push_log("Sync completed successfully".into()),
                 Err(e) => app.push_log(format!("Sync failed: {e}")),
             },

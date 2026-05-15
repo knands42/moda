@@ -14,15 +14,15 @@ pub struct Installer;
 impl Installer {
     pub fn install(source: &ModSource, target: &Path) -> Result<(), ModManagerError> {
         match source {
-            ModSource::LocalZip(path) => Self::install_from_zip(path, target),
-            ModSource::LocalDir(path) => Self::install_from_dir(path, target),
+            ModSource::LocalZip(file_path) => Self::install_from_zip(file_path, target),
+            ModSource::LocalDir(file_path) => Self::install_from_dir(file_path, target),
         }?;
 
         Ok(())
     }
 
-    fn install_from_zip(source: &Path, target: &Path) -> Result<(), ModManagerError> {
-        let file = File::open(source)
+    fn install_from_zip(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
+        let file = File::open(file_path)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
         let mut archive = ZipArchive::new(file)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
@@ -62,22 +62,22 @@ impl Installer {
         Ok(())
     }
 
-    fn install_from_dir(source: &Path, target: &Path) -> Result<(), ModManagerError> {
-        Self::copy_dir_recursive(source, target)
+    fn install_from_dir(folder_path: &Path, target: &Path) -> Result<(), ModManagerError> {
+        Self::copy_dir_recursive(folder_path, target)
     }
 
-    fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), ModManagerError> {
-        std::fs::create_dir_all(dst)?;
+    fn copy_dir_recursive(folder_src: &Path, folder_dst: &Path) -> Result<(), ModManagerError> {
+        std::fs::create_dir_all(folder_dst)?;
 
-        for entry in std::fs::read_dir(src)? {
+        for entry in std::fs::read_dir(folder_src)? {
             let entry = entry?;
-            let src_path = entry.path();
-            let dst_path = dst.join(entry.file_name());
+            let src_file_path = entry.path();
+            let dst_file_path = folder_dst.join(entry.file_name());
 
-            if src_path.is_dir() {
-                Self::copy_dir_recursive(&src_path, &dst_path)?;
+            if src_file_path.is_dir() {
+                Self::copy_dir_recursive(&src_file_path, &dst_file_path)?;
             } else {
-                std::fs::copy(&src_path, &dst_path)?;
+                std::fs::copy(&src_file_path, &dst_file_path)?;
             }
         }
 

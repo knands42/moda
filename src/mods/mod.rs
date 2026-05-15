@@ -7,4 +7,5 @@ mod mod_state;
 
 pub use enabler::Enabler;
 pub use installer::{Installer, ModSource};
+pub use mod_state::ModState;
 pub use sync_manager::SyncManager;

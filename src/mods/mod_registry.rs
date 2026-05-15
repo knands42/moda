@@ -1,28 +1,32 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
-use std::marker::PhantomData;
-use std::path::PathBuf;
-use std::fs;
 use crate::mods::mod_state::ModState;
+use std::marker::PhantomData;
+use std::path::{Path, PathBuf};
+use std::fs;
 
+#[derive(Clone)]
 pub struct ModMetadata {
 
 }
+#[derive(Clone)]
 pub struct ModEntry {
     pub name: String,
     pub path: PathBuf,
     pub kind: ModEntryKind,
-    pub metadata: Option<ModMetadata>
+    pub metadata: Option<ModMetadata>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModStatus {
     Downloaded,
     Staged,
     Enabled,
-    Modified
+    Modified,
 }
 
+#[derive(Clone)]
 pub struct ReconciledMod {
     pub name: String,
     pub status: ModStatus,
@@ -31,7 +35,7 @@ pub struct ReconciledMod {
     pub game_entry: Option<ModEntry>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ModEntryKind {
     Directory,
     ZipArchive,
@@ -74,13 +78,89 @@ impl<G: Game> ModRegistry<G> {
         self.get_one_mod(staged_mods_path, name)
     }
 
-    pub fn reconcile(&self) -> Result<ModState, ModManagerError> {
-        let mods_root_path = self.get_mod_path();
-        let staging_path = self.get_staging_path();
+    fn list_game_mods_folder(&self, game_mod_path: &Path) -> Result<Vec<ModEntry>, ModManagerError> {
+        let dir = match fs::read_dir(game_mod_path) {
+            Ok(dir) => dir,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(ModManagerError::IoError(e)),
+        };
 
+        let mut entries = Vec::new();
+        for entry in dir {
+            let entry = entry?;
+            let ft = entry.file_type()?;
+            if !ft.is_dir() && !ft.is_symlink() {
+                continue;
+            }
+            let name = entry
+                .file_name()
+                .into_string()
+                .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
+            entries.push(ModEntry {
+                name,
+                path: entry.path(),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            });
+        }
+        Ok(entries)
+    }
 
+    pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
+        let source_mods = self.list_mods_folder()?;
+        let staged_mods = self.list_staging_folder()?;
+        let enabled_mods = self.list_game_mods_folder(game_mod_path)?;
 
-        Ok(ModState { mods: Vec::new() })
+        let mut names: Vec<String> = Vec::new();
+        for m in &source_mods {
+            let name = strip_zip_ext(&m.name);
+            if !names.contains(&name) {
+                names.push(name);
+            }
+        }
+        for m in &staged_mods {
+            if !names.contains(&m.name) {
+                names.push(m.name.clone());
+            }
+        }
+        for m in &enabled_mods {
+            if !names.contains(&m.name) {
+                names.push(m.name.clone());
+            }
+        }
+
+        let mut reconciled = Vec::new();
+        for name in names {
+            let src = source_mods.iter().find(|e| strip_zip_ext(&e.name) == name).cloned();
+            let stg = staged_mods.iter().find(|e| e.name == name).cloned();
+            let ena = enabled_mods.iter().find(|e| e.name == name).cloned();
+
+            let status = if let (Some(ref s), Some(ref t)) = (&src, &stg) {
+                if is_newer(&s.path, &t.path) {
+                    ModStatus::Modified
+                } else if ena.is_some() {
+                    ModStatus::Enabled
+                } else {
+                    ModStatus::Staged
+                }
+            } else if ena.is_some() {
+                ModStatus::Enabled
+            } else if stg.is_some() {
+                ModStatus::Staged
+            } else {
+                ModStatus::Downloaded
+            };
+
+            reconciled.push(ReconciledMod {
+                name,
+                status,
+                source_entry: src,
+                staging_entry: stg,
+                game_entry: ena,
+            });
+        }
+
+        Ok(ModState { mods: reconciled })
     }
 
     fn list_folder(&self, source: PathBuf) -> Result<Vec<ModEntry>, ModManagerError> {
@@ -164,4 +244,14 @@ impl<G: Game> ModRegistry<G> {
     fn get_staging_path(&self) -> PathBuf {
         PathBuf::from(&self.config.staging_root_path).join(G::registry_id())
     }
+}
+
+fn strip_zip_ext(name: &str) -> String {
+    name.strip_suffix(".zip").unwrap_or(name).to_string()
+}
+
+fn is_newer(a: &Path, b: &Path) -> bool {
+    let a_mt = fs::metadata(a).ok().and_then(|m| m.modified().ok());
+    let b_mt = fs::metadata(b).ok().and_then(|m| m.modified().ok());
+    a_mt.zip(b_mt).map_or(false, |(a, b)| a > b)
 }

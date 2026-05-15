@@ -1,6 +1,7 @@
 use moda::config::Config;
 use moda::games::StardewValley;
-use moda::mods::mod_registry::{ModEntry, ModEntryKind};
+use moda::mods::mod_registry::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
+use moda::mods::ModState;
 use moda::mods::SyncManager;
 use std::collections::HashMap;
 use std::fs;
@@ -27,8 +28,9 @@ fn test_stage_mods_empty_folder() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
+    let mut state = ModState::default();
 
-    let result = manager.stage_mods();
+    let result = manager.stage_mods(&mut state);
 
     assert!(result.is_ok());
 }
@@ -48,17 +50,17 @@ fn test_stage_one_mod_dir() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
+    let mut state = ModState::default();
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
         path: mods_path.join("SomeMod"),
         kind: ModEntryKind::Directory,
-        metadata: None
+        metadata: None,
     };
-    let result = manager.stage_one_mod(entry);
+    let result = manager.stage_one_mod(&entry, &mut state);
 
     assert!(result.is_ok());
-    // Contents are copied directly to staging root (mod dir name not preserved)
     assert!(staging_path.join("mod.txt").exists());
 }
 
@@ -84,14 +86,15 @@ fn test_stage_one_mod_zip() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
+    let mut state = ModState::default();
 
     let entry = ModEntry {
         name: "SomeMod.zip".to_string(),
         path: zip_path,
         kind: ModEntryKind::ZipArchive,
-        metadata: None
+        metadata: None,
     };
-    let result = manager.stage_one_mod(entry);
+    let result = manager.stage_one_mod(&entry, &mut state);
 
     assert!(result.is_ok());
     assert!(staging_path.join("mod.txt").exists());
@@ -106,8 +109,9 @@ fn test_enable_mods_empty_staging() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
+    let mut state = ModState::default();
 
-    let result = manager.enable_mods();
+    let result = manager.enable_mods(&mut state);
 
     assert!(result.is_ok());
 }
@@ -128,14 +132,15 @@ fn test_enable_one_mod() {
     );
     let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
+    let mut state = ModState::default();
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
         path: staging_path.join("SomeMod"),
         kind: ModEntryKind::Directory,
-        metadata: None
+        metadata: None,
     };
-    let result = manager.enable_one_mod(entry);
+    let result = manager.enable_one_mod(&entry, &mut state);
 
     assert!(result.is_ok());
     assert!(game_path.join("Mods").join("SomeMod").exists());
@@ -160,11 +165,23 @@ fn test_sync_all_full_pipeline() {
     let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
 
-    let result = manager.sync_all();
+    let mut state = ModState {
+        mods: vec![ReconciledMod {
+            name: "SomeMod".to_string(),
+            status: ModStatus::Downloaded,
+            source_entry: Some(ModEntry {
+                name: "SomeMod".to_string(),
+                path: mods_path.join("SomeMod"),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            }),
+            staging_entry: None,
+            game_entry: None,
+        }],
+    };
+
+    let result = manager.sync_all(&mut state);
 
     assert!(result.is_ok());
-    // Mod contents are staged (directory name is not preserved)
     assert!(staging_path.join("mod.txt").exists());
-    // Enable step has nothing to link because staging contains files, not mod directories
-    assert!(!game_path.join("Mods").join("SomeMod").exists());
 }

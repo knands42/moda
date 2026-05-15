@@ -1,9 +1,10 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
-use crate::mods::mod_registry::{ModEntry, ModEntryKind, ModRegistry};
+use crate::mods::mod_registry::{ModEntry, ModEntryKind, ModRegistry, ModStatus};
 use crate::mods::{Enabler, Installer, ModSource};
 use std::path::PathBuf;
+use crate::mods::mod_state::ModState;
 
 pub struct SyncManager<G: Game> {
     game: G,
@@ -21,49 +22,58 @@ impl<G: Game> SyncManager<G> {
         }
     }
 
-    pub fn stage_mods(&self) -> Result<(), ModManagerError> {
+    pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         let mods_folder = self.mod_registry.list_mods_folder()?;
 
         for entry in mods_folder {
-            self.stage_one_mod(entry)?;
+            self.stage_one_mod(&entry, state)?;
         }
 
         Ok(())
     }
 
-    pub fn stage_one_mod(&self, mod_entry: ModEntry) -> Result<(), ModManagerError> {
+    pub fn stage_one_mod(&self, mod_entry: &ModEntry, state: &mut ModState) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
         if mod_entry.kind == ModEntryKind::Directory {
-            Installer::install(&ModSource::LocalDir(mod_entry.path), staging_path.as_path())?;
+            Installer::install(&ModSource::LocalDir(mod_entry.path.clone()), staging_path.as_path())?;
         } else if mod_entry.kind == ModEntryKind::ZipArchive {
-            Installer::install(&ModSource::LocalZip(mod_entry.path), staging_path.as_path())?;
+            Installer::install(&ModSource::LocalZip(mod_entry.path.clone()), staging_path.as_path())?;
         }
 
+        state.set_staged(&mod_entry.name);
         Ok(())
     }
 
-    pub fn enable_mods(&self) -> Result<(), ModManagerError> {
+    pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         let staging_path = self.mod_registry.list_staging_folder()?;
         for entry in staging_path {
-            self.enable_one_mod(entry)?;
+            self.enable_one_mod(&entry, state)?;
         }
 
         Ok(())
     }
 
-    pub fn enable_one_mod(&self, mod_entry: ModEntry) -> Result<(), ModManagerError> {
+    pub fn enable_one_mod(&self, mod_entry: &ModEntry, state: &mut ModState) -> Result<(), ModManagerError> {
         let game_mods_path = self.game.game_mod_path();
         Enabler::activate(
             mod_entry.path.as_path(),
-            game_mods_path.join(mod_entry.name).as_path(),
+            game_mods_path.join(&mod_entry.name).as_path(),
         )?;
 
+        state.set_enabled(&mod_entry.name);
         Ok(())
     }
 
-    pub fn sync_all(&self) -> Result<(), ModManagerError> {
-        self.stage_mods()?;
-        self.enable_mods()?;
+    pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        let reconciled = state.mods.clone();
+        for m in &reconciled {
+            match m.status {
+                ModStatus::Downloaded => self.stage_one_mod(m.source_entry.as_ref().unwrap(), state)?,
+                ModStatus::Staged => self.enable_one_mod(m.staging_entry.as_ref().unwrap(), state)?,
+                ModStatus::Enabled => continue,
+                ModStatus::Modified => todo!()
+            }
+        }
 
         Ok(())
     }
