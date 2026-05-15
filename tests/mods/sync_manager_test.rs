@@ -53,6 +53,7 @@ fn test_stage_one_mod_dir() {
         name: "SomeMod".to_string(),
         path: mods_path.join("SomeMod"),
         kind: ModEntryKind::Directory,
+        metadata: None
     };
     let result = manager.stage_one_mod(entry);
 
@@ -88,6 +89,7 @@ fn test_stage_one_mod_zip() {
         name: "SomeMod.zip".to_string(),
         path: zip_path,
         kind: ModEntryKind::ZipArchive,
+        metadata: None
     };
     let result = manager.stage_one_mod(entry);
 
@@ -131,6 +133,7 @@ fn test_enable_one_mod() {
         name: "SomeMod".to_string(),
         path: staging_path.join("SomeMod"),
         kind: ModEntryKind::Directory,
+        metadata: None
     };
     let result = manager.enable_one_mod(entry);
 

@@ -4,11 +4,16 @@ use crate::games::Game;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::fs;
+use crate::mods::mod_state::ModState;
 
+pub struct ModMetadata {
+
+}
 pub struct ModEntry {
     pub name: String,
     pub path: PathBuf,
     pub kind: ModEntryKind,
+    pub metadata: Option<ModMetadata>
 }
 
 pub enum ModStatus {
@@ -69,8 +74,13 @@ impl<G: Game> ModRegistry<G> {
         self.get_one_mod(staged_mods_path, name)
     }
 
-    pub fn reconcile(&self) -> Result<Vec<ReconciledMod>, ModManagerError> {
-        Ok(vec![])
+    pub fn reconcile(&self) -> Result<ModState, ModManagerError> {
+        let mods_root_path = self.get_mod_path();
+        let staging_path = self.get_staging_path();
+
+
+
+        Ok(ModState { mods: Vec::new() })
     }
 
     fn list_folder(&self, source: PathBuf) -> Result<Vec<ModEntry>, ModManagerError> {
@@ -94,12 +104,14 @@ impl<G: Game> ModRegistry<G> {
                     name,
                     path: entry.path(),
                     kind: ModEntryKind::ZipArchive,
+                    metadata: None
                 });
             } else if entry.file_type()?.is_dir() {
                 entries.push(ModEntry {
                     name,
                     path: entry.path(),
                     kind: ModEntryKind::Directory,
+                    metadata: None
                 });
             }
         }
@@ -129,12 +141,14 @@ impl<G: Game> ModRegistry<G> {
                         name: entry_name,
                         path: entry.path(),
                         kind: ModEntryKind::ZipArchive,
+                        metadata: None
                     });
                 } else if entry.file_type()?.is_dir() {
                     return Ok(ModEntry {
                         name: entry_name,
                         path: entry.path(),
                         kind: ModEntryKind::Directory,
+                        metadata: None
                     });
                 }
             }
