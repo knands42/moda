@@ -1,4 +1,5 @@
-- [ ] Make the config file auto create the config file at the designed location and with default values (based on user $HOME)
+- [x] Make the config file auto create the config file at the designed location and with default values (based on user $HOME)
+- [ ] Add profile management
 - [ ] Support download of collection
 - [ ] Open Browser to download mods
 - [ ] Track state on a sqlite

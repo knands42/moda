@@ -28,15 +28,22 @@ moda/
 ├── src/
 │   ├── main.rs              # Iced app entrypoint
 │   ├── lib.rs               # Re-exports public modules
-│   ├── config.rs            # Config loading from ~/.config/modmanager/config.toml
+│   ├── config.rs            # Config loading from ~/.config/moda/config.toml
 │   ├── error.rs             # Error handling
+│   ├── ui.rs                # Iced UI (Application trait)
 │   ├── games/
 │   │   ├── mod.rs           # Game trait definition
 │   │   └── stardew.rs       # Stardew Valley implementation
 │   ├── mods/
-│   │   ├── mod.rs           # Re-exports Installer & NexusClient
-│   │   ├── nexus.rs         # Nexus API client
-│   │   └── installer.rs     # Mod installation logic (ModSource enum + Installer struct)
+│   │   ├── mod.rs           # Re-exports public mod modules
+│   │   ├── downloader/
+│   │   │   ├── mod.rs       # Downloader abstraction
+│   │   │   └── nexus.rs     # Nexus API client
+│   │   ├── enabler.rs       # Mod enable/disable management
+│   │   ├── installer.rs     # Mod installation logic (ModSource enum + Installer struct)
+│   │   ├── mod_registry.rs  # Mod registry / lookup
+│   │   ├── mod_state.rs     # Mod state tracking
+│   │   └── sync_manager.rs  # Sync logic between library and game folder
 │   └── profiles/
 │       └── mod.rs           # Profile management (stub)
 └── tests/
@@ -44,10 +51,17 @@ moda/
     ├── games/
     │   ├── mod.rs
     │   └── stardew_test.rs
-    └── mods/
-        ├── mod.rs
-        ├── nexus.rs
-        └── installer_test.rs
+    ├── mods/
+    │   ├── mod.rs
+    │   ├── downloader/
+    │   │   ├── mod.rs
+    │   │   └── nexus_test.rs
+    │   ├── enabler_test.rs
+    │   ├── installer_test.rs
+    │   ├── mod_registry_test.rs
+    │   └── sync_manager_test.rs
+    └── profiles/
+        └── mod.rs
 ```
 
 ## Testing Strategy
