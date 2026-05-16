@@ -21,6 +21,7 @@ fn make_config(mods_root: &str, staging_root: &str) -> Config {
 
 #[test]
 fn test_stage_mods_empty_folder() {
+    // Given: an empty mods folder and a default state
     let temp = TempDir::new().unwrap();
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
@@ -30,13 +31,16 @@ fn test_stage_mods_empty_folder() {
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
+    // When: staging all mods
     let result = manager.stage_mods(&mut state);
 
+    // Then: it succeeds without error
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_stage_one_mod_dir() {
+    // Given: a directory mod in the source folder and a state tracking it as Downloaded
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -69,8 +73,11 @@ fn test_stage_one_mod_dir() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: staging the directory mod
     let result = manager.stage_one_mod(&entry, &mut state);
 
+    // Then: the mod is copied to staging and state transitions to Staged
     assert!(result.is_ok());
     assert!(staging_path.join("SomeMod").join("mod.txt").exists());
     assert_eq!(state.snapshot().len(), 1);
@@ -79,6 +86,7 @@ fn test_stage_one_mod_dir() {
 
 #[test]
 fn test_stage_one_mod_zip() {
+    // Given: a flat zip (no wrapping dir) in the source folder
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -118,8 +126,11 @@ fn test_stage_one_mod_zip() {
         kind: ModEntryKind::ZipArchive,
         metadata: None,
     };
+
+    // When: staging the zip mod
     let result = manager.stage_one_mod(&entry, &mut state);
 
+    // Then: the zip is extracted into a folder named after the mod (without .zip)
     assert!(result.is_ok());
     assert!(staging_path.join("SomeMod").join("mod.txt").exists());
     assert_eq!(state.snapshot().len(), 1);
@@ -128,6 +139,7 @@ fn test_stage_one_mod_zip() {
 
 #[test]
 fn test_stage_one_mod_zip_with_wrap_directory() {
+    // Given: a zip with a wrapping top-level directory (WrapDir/)
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -167,15 +179,18 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
         kind: ModEntryKind::ZipArchive,
         metadata: None,
     };
+
+    // When: staging the wrapping zip
     let result = manager.stage_one_mod(&entry, &mut state);
 
+    // Then: the zip extracts into staging root, preserving the wrap directory
     assert!(result.is_ok());
-    // Wrapping zip extracts into staging root, creating WrapDir/
     assert!(staging_path.join("WrapDir").join("mod.txt").exists());
 }
 
 #[test]
 fn test_stage_one_mod_other_kind() {
+    // Given: a mod entry with kind Other (non-standard)
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
 
@@ -204,17 +219,19 @@ fn test_stage_one_mod_other_kind() {
         kind: ModEntryKind::Other,
         metadata: None,
     };
+
+    // When: staging the Other-kind mod
     let result = manager.stage_one_mod(&entry, &mut state);
 
+    // Then: no filesystem operation occurs, but state still transitions to Staged
     assert!(result.is_ok());
-    // No filesystem operation was performed
     assert!(!staging_path.join("OtherMod").exists());
-    // State still transitions to Staged (prepares for next cycle)
     assert_eq!(state.snapshot()[0].status, ModStatus::Staged);
 }
 
 #[test]
 fn test_stage_mods_with_mods() {
+    // Given: multiple directory mods in the source folder with tracked state
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -258,8 +275,10 @@ fn test_stage_mods_with_mods() {
         },
     ]);
 
+    // When: batch-staging all mods
     let result = manager.stage_mods(&mut state);
 
+    // Then: all mods are copied to staging and state reflects Staged
     assert!(result.is_ok());
     assert!(staging_path.join("ModA").join("a.txt").exists());
     assert!(staging_path.join("ModB").join("b.txt").exists());
@@ -271,6 +290,7 @@ fn test_stage_mods_with_mods() {
 
 #[test]
 fn test_enable_mods_empty_staging() {
+    // Given: an empty staging folder and a default state
     let temp = TempDir::new().unwrap();
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
@@ -280,13 +300,16 @@ fn test_enable_mods_empty_staging() {
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
+    // When: enabling all mods (none exist in staging)
     let result = manager.enable_mods(&mut state);
 
+    // Then: it succeeds without error
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_enable_one_mod() {
+    // Given: a staged mod in the staging folder
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
     let game_path = temp.path().join("game");
@@ -320,8 +343,11 @@ fn test_enable_one_mod() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: enabling the mod
     let result = manager.enable_one_mod(&entry, &mut state);
 
+    // Then: a symlink is created in the game mods folder and state transitions to Enabled
     assert!(result.is_ok());
     assert!(game_path.join("Mods").join("SomeMod").exists());
     assert!(game_path.join("Mods").join("SomeMod").is_symlink());
@@ -330,6 +356,7 @@ fn test_enable_one_mod() {
 
 #[test]
 fn test_enable_one_mod_source_not_found() {
+    // Given: a mod entry pointing to a non-existent staging path
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
     let game_path = temp.path().join("game");
@@ -349,12 +376,16 @@ fn test_enable_one_mod_source_not_found() {
         metadata: None,
     };
 
+    // When: trying to enable a non-existent mod
     let result = manager.enable_one_mod(&entry, &mut state);
+
+    // Then: an error is returned (Enabler::activate requires source to exist)
     assert!(result.is_err());
 }
 
 #[test]
 fn test_enable_mods_with_mods() {
+    // Given: multiple staged mods in the staging folder
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
     let game_path = temp.path().join("game");
@@ -398,8 +429,10 @@ fn test_enable_mods_with_mods() {
         },
     ]);
 
+    // When: batch-enabling all staged mods
     let result = manager.enable_mods(&mut state);
 
+    // Then: all mods get symlinks in game mods and state shows Enabled
     assert!(result.is_ok());
     assert!(game_path.join("Mods").join("ModA").is_symlink());
     assert!(game_path.join("Mods").join("ModB").is_symlink());
@@ -411,6 +444,7 @@ fn test_enable_mods_with_mods() {
 
 #[test]
 fn test_unstage_one_mod_dir() {
+    // Given: a staged mod that also exists in the source folder
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -450,8 +484,11 @@ fn test_unstage_one_mod_dir() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: unstaging the mod
     let result = manager.unstage_one_mod(&entry, &mut state);
 
+    // Then: staging is removed, source is preserved, state reverts to Downloaded
     assert!(result.is_ok());
     assert!(!staging_path.join("SomeMod").exists());
     assert!(mods_path.join("SomeMod").exists());
@@ -461,6 +498,7 @@ fn test_unstage_one_mod_dir() {
 
 #[test]
 fn test_unstage_one_mod_not_in_downloads() {
+    // Given: a staged mod that was removed from the source folder
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -494,8 +532,11 @@ fn test_unstage_one_mod_not_in_downloads() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: unstaging (source no longer present)
     let result = manager.unstage_one_mod(&entry, &mut state);
 
+    // Then: staging is removed and the mod is fully removed from state
     assert!(result.is_ok());
     assert!(!staging_path.join("SomeMod").exists());
     assert_eq!(state.snapshot().len(), 0);
@@ -503,6 +544,7 @@ fn test_unstage_one_mod_not_in_downloads() {
 
 #[test]
 fn test_unstage_one_mod_nonexistent_path() {
+    // Given: a mod entry whose staging path does not exist on disk
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
 
@@ -520,13 +562,17 @@ fn test_unstage_one_mod_nonexistent_path() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: trying to unstage a non-existent mod
     let result = manager.unstage_one_mod(&entry, &mut state);
 
+    // Then: it succeeds gracefully (no-op)
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_unstage_mods_batch() {
+    // Given: two staged mods — one with a source entry, one without
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -579,13 +625,14 @@ fn test_unstage_mods_batch() {
         },
     ]);
 
+    // When: batch-unstaging all mods
     let result = manager.unstage_mods(&mut state);
 
+    // Then: ModA reverts to Downloaded, ModB is removed entirely
     assert!(result.is_ok());
     assert!(!staging_path.join("ModA").exists());
     assert!(!staging_path.join("ModB").exists());
-    assert!(mods_path.join("ModA").exists()); // source kept
-                                              // ModA: exists in source → Downloaded; ModB: no source → removed
+    assert!(mods_path.join("ModA").exists());
     assert_eq!(state.snapshot().len(), 1);
     assert_eq!(state.snapshot()[0].name, "ModA");
     assert_eq!(state.snapshot()[0].status, ModStatus::Downloaded);
@@ -593,6 +640,7 @@ fn test_unstage_mods_batch() {
 
 #[test]
 fn test_disable_one_mod_with_staging() {
+    // Given: an enabled mod that also exists in the staging folder
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
     let game_path = temp.path().join("game");
@@ -637,8 +685,11 @@ fn test_disable_one_mod_with_staging() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: disabling the mod
     let result = manager.disable_one_mod(&entry, &mut state);
 
+    // Then: the symlink is removed and state reverts to Staged
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("SomeMod").exists());
     assert_eq!(state.snapshot().len(), 1);
@@ -647,6 +698,7 @@ fn test_disable_one_mod_with_staging() {
 
 #[test]
 fn test_disable_one_mod_not_in_staging_but_in_downloads() {
+    // Given: an enabled mod symlinked directly from source (no staging)
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -693,8 +745,11 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: disabling (mod not in staging but in source)
     let result = manager.disable_one_mod(&entry, &mut state);
 
+    // Then: symlink removed and state reverts to Downloaded
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("SomeMod").exists());
     assert_eq!(state.snapshot().len(), 1);
@@ -703,6 +758,7 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
 
 #[test]
 fn test_disable_one_mod_only_in_game_mods() {
+    // Given: an orphan enabled mod (game symlink with no source or staging)
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
     let game_path = temp.path().join("game");
@@ -738,8 +794,11 @@ fn test_disable_one_mod_only_in_game_mods() {
         kind: ModEntryKind::Directory,
         metadata: None,
     };
+
+    // When: disabling the orphan mod
     let result = manager.disable_one_mod(&entry, &mut state);
 
+    // Then: symlink removed and mod fully removed from state
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("SomeMod").exists());
     assert_eq!(state.snapshot().len(), 0);
@@ -747,6 +806,7 @@ fn test_disable_one_mod_only_in_game_mods() {
 
 #[test]
 fn test_disable_one_mod_nonexistent_game_mod() {
+    // Given: a mod entry whose game mod path does not exist on disk
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game");
 
@@ -765,16 +825,17 @@ fn test_disable_one_mod_nonexistent_game_mod() {
         metadata: None,
     };
 
+    // When: trying to disable a non-existent game mod
     let result = manager.disable_one_mod(&entry, &mut state);
 
-    // path doesn't exist → deactivate skipped
-    // mod not in staging or downloads → state.remove is no-op
+    // Then: deactivation is skipped, state.remove is a no-op, returns Ok
     assert!(result.is_ok());
     assert_eq!(state.snapshot().len(), 0);
 }
 
 #[test]
 fn test_disable_mods_with_mods() {
+    // Given: multiple enabled mods with symlinks in the game mods folder
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
     let game_path = temp.path().join("game");
@@ -840,12 +901,13 @@ fn test_disable_mods_with_mods() {
         },
     ]);
 
+    // When: batch-disabling all mods
     let result = manager.disable_mods(&mut state);
 
+    // Then: all symlinks are removed and state shows Staged
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("ModA").exists());
     assert!(!game_path.join("Mods").join("ModB").exists());
-    // Both are in staging → fall back to Staged
     assert!(state
         .snapshot()
         .iter()
@@ -854,6 +916,7 @@ fn test_disable_mods_with_mods() {
 
 #[test]
 fn test_sync_all_full_pipeline() {
+    // Given: a mod in Downloaded state with source present
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game");
     let mods_path = temp.path().join("mods").join("stardew_valley");
@@ -883,8 +946,10 @@ fn test_sync_all_full_pipeline() {
         game_entry: None,
     }]);
 
+    // When: running sync_all
     let result = manager.sync_all(&mut state);
 
+    // Then: the mod is staged (one status advancement) and state reflects Staged
     assert!(result.is_ok());
     assert!(staging_path.join("SomeMod").join("mod.txt").exists());
     let snapshot = state.snapshot();
@@ -894,6 +959,7 @@ fn test_sync_all_full_pipeline() {
 
 #[test]
 fn test_sync_all_staged_to_enabled() {
+    // Given: a mod in Staged state with staging entry present
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -922,8 +988,10 @@ fn test_sync_all_staged_to_enabled() {
         game_entry: None,
     }]);
 
+    // When: running sync_all
     let result = manager.sync_all(&mut state);
 
+    // Then: the mod is enabled (symlink created) and state reflects Enabled
     assert!(result.is_ok());
     assert!(game_path.join("Mods").join("SomeMod").is_symlink());
     assert_eq!(state.snapshot()[0].status, ModStatus::Enabled);
@@ -931,6 +999,7 @@ fn test_sync_all_staged_to_enabled() {
 
 #[test]
 fn test_sync_all_enabled_skipped() {
+    // Given: a mod already in Enabled state with game entry
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -969,32 +1038,31 @@ fn test_sync_all_enabled_skipped() {
         }),
     }]);
 
+    // When: running sync_all
     let result = manager.sync_all(&mut state);
 
+    // Then: the enabled mod is skipped, symlink and state are unchanged
     assert!(result.is_ok());
-    // Symlink still intact, state unchanged
     assert!(game_path.join("Mods").join("SomeMod").is_symlink());
     assert_eq!(state.snapshot()[0].status, ModStatus::Enabled);
 }
 
 #[test]
 fn test_sync_all_multiple_statuses() {
+    // Given: three mods in different states — Downloaded, Staged, Enabled
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game");
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
 
-    // ModA: Downloaded → needs staging
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir(mods_path.join("ModA")).unwrap();
     fs::write(mods_path.join("ModA").join("a.txt"), "a").unwrap();
 
-    // ModB: Staged → needs enabling
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir(staging_path.join("ModB")).unwrap();
     fs::write(staging_path.join("ModB").join("b.txt"), "b").unwrap();
 
-    // ModC: Enabled → no-op
     fs::create_dir(staging_path.join("ModC")).unwrap();
     fs::write(staging_path.join("ModC").join("c.txt"), "c").unwrap();
     fs::create_dir_all(game_path.join("Mods")).unwrap();
@@ -1055,28 +1123,26 @@ fn test_sync_all_multiple_statuses() {
         },
     ]);
 
+    // When: running sync_all
     let result = manager.sync_all(&mut state);
 
+    // Then: each mod advances exactly one status
     assert!(result.is_ok());
-    // ModA staged
     assert!(staging_path.join("ModA").join("a.txt").exists());
-    // ModB enabled
     assert!(game_path.join("Mods").join("ModB").is_symlink());
-    // ModC still enabled
     assert!(game_path.join("Mods").join("ModC").is_symlink());
 
     let snapshot = state.snapshot();
     assert_eq!(snapshot.len(), 3);
-    // sync_all only advances one status per call
     assert_eq!(
         snapshot
             .iter()
             .map(|m| (&*m.name, m.status))
             .collect::<Vec<_>>(),
         vec![
-            ("ModA", ModStatus::Staged),  // Downloaded → Staged
-            ("ModB", ModStatus::Enabled), // Staged → Enabled
-            ("ModC", ModStatus::Enabled), // Enabled → no-op
+            ("ModA", ModStatus::Staged),  // Downloaded -> Staged
+            ("ModB", ModStatus::Enabled), // Staged -> Enabled
+            ("ModC", ModStatus::Enabled), // Enabled -> no-op
         ]
     );
 }
