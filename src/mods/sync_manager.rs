@@ -82,13 +82,14 @@ impl<G: Game> SyncManager<G> {
             Installer::uninstall_from_dir(&mod_entry.path)?;
         }
 
+        let _ = Enabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
+
         match self.mod_registry.get_mod_by_name(&mod_entry.name) {
             Ok(_) => {
                 if state.get_mod(&mod_entry.name).is_some() {
-                    state.set_unstaged(&mod_entry.name);
+                    state.set_downloaded(&mod_entry.name);
                 } else {
-                    self.mod_registry
-                        .reconcile(self.game.game_mod_path().as_path())?;
+                    state.remove(&mod_entry.name);
                 }
                 Ok(())
             }
@@ -145,10 +146,26 @@ impl<G: Game> SyncManager<G> {
 
         match self.mod_registry.get_staged_mod_by_name(&mod_entry.name) {
             Ok(_) => {
-                state.set_disabled(&mod_entry.name);
+                state.set_staged(&mod_entry.name);
                 Ok(())
             }
-            Err(ModManagerError::ModNotFound(_)) => self.unstage_one_mod(mod_entry, state),
+            Err(ModManagerError::ModNotFound(_)) => {
+                match self.mod_registry.get_mod_by_name(&mod_entry.name) {
+                    Ok(_) => {
+                        if state.get_mod(&mod_entry.name).is_some() {
+                            state.set_downloaded(&mod_entry.name);
+                        } else {
+                            state.remove(&mod_entry.name);
+                        }
+                        Ok(())
+                    }
+                    Err(ModManagerError::ModNotFound(_)) => {
+                        state.remove(&mod_entry.name);
+                        Ok(())
+                    }
+                    Err(e) => Err(e),
+                }
+            }
             Err(e) => Err(e),
         }
     }

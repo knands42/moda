@@ -211,6 +211,7 @@ impl<G: Game> ModRegistry<G> {
         Ok(entries)
     }
 
+    // TODO: make it O(1)
     fn get_one_mod(&self, source: PathBuf, name: &str) -> Result<ModEntry, ModManagerError> {
         let dir = match fs::read_dir(&source) {
             Ok(dir) => dir,

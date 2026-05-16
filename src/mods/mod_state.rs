@@ -26,7 +26,7 @@ impl ModState {
         }
     }
 
-    pub fn set_unstaged(&mut self, name: &str) {
+    pub fn set_downloaded(&mut self, name: &str) {
         let base = name.strip_suffix(".zip").unwrap_or(name);
         if let Some(m) = self.mods.get_mut(base) {
             m.status = ModStatus::Downloaded;
@@ -37,13 +37,6 @@ impl ModState {
         let base = name.strip_suffix(".zip").unwrap_or(name);
         if let Some(m) = self.mods.get_mut(base) {
             m.status = ModStatus::Enabled;
-        }
-    }
-
-    pub fn set_disabled(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
-        if let Some(m) = self.mods.get_mut(base) {
-            m.status = ModStatus::Staged;
         }
     }
 

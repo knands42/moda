@@ -36,6 +36,11 @@ impl Enabler {
     }
 
     pub fn deactivate(mod_path: &Path) -> Result<(), ModManagerError> {
+        if mod_path.is_symlink() {
+            std::fs::remove_file(mod_path).map_err(ModManagerError::IoError)?;
+            return Ok(());
+        }
+
         if !mod_path.exists() {
             return Err(ModManagerError::IoError(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
@@ -43,10 +48,9 @@ impl Enabler {
             )));
         }
 
-        if mod_path.is_symlink() {
-            std::fs::remove_file(mod_path).map_err(ModManagerError::IoError)?;
-        }
-
-        Ok(())
+        Err(ModManagerError::IoError(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("Path is not a symlink: {}", mod_path.display()),
+        )))
     }
 }
