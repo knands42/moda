@@ -33,7 +33,6 @@ impl Game for StardewValley {
     }
 
     fn registry_id() -> &'static str {
-        // TODO: where to get/generate registry id
         "stardew_valley"
     }
 
