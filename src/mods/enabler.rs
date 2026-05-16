@@ -34,4 +34,19 @@ impl Enabler {
 
         std::os::unix::fs::symlink(source, target).map_err(ModManagerError::IoError)
     }
+    
+    pub fn deactivate(mod_path: &Path) -> Result<(), ModManagerError> {
+        if !mod_path.exists() {
+            return Err(ModManagerError::IoError(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Source path does not exist: {}", mod_path.display()),
+            )));
+        }
+
+        if mod_path.is_symlink() {
+            std::fs::remove_file(mod_path).map_err(ModManagerError::IoError)?;
+        }
+        
+        Ok(())
+    }
 }

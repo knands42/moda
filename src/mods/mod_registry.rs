@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
@@ -78,7 +79,7 @@ impl<G: Game> ModRegistry<G> {
         self.get_one_mod(staged_mods_path, name)
     }
 
-    fn list_game_mods_folder(
+    pub fn list_game_mods_folder(
         &self,
         game_mod_path: &Path,
     ) -> Result<Vec<ModEntry>, ModManagerError> {
@@ -115,30 +116,24 @@ impl<G: Game> ModRegistry<G> {
         let enabled_mods = self.list_game_mods_folder(game_mod_path)?;
 
         // Map effective name → source entry
-        let mut source_by_name: std::collections::HashMap<String, ModEntry> =
-            std::collections::HashMap::new();
-        for m in &source_mods {
-            let name = effective_name(m);
-            source_by_name.insert(name, m.clone());
-        }
+        let src_by_name: HashMap<String, ModEntry> = source_mods.iter().map(|m| (effective_name(m), m.clone())).collect();
+        let stg_by_name: HashMap<String, ModEntry> = staged_mods.iter().map(|m| (m.name.clone(), m.clone())).collect();
+        let ena_by_name: HashMap<String, ModEntry> = enabled_mods.iter().map(|m| (m.name.clone(), m.clone())).collect();
 
-        let mut names: Vec<String> = source_by_name.keys().cloned().collect();
-        for m in &staged_mods {
-            if !names.contains(&m.name) {
-                names.push(m.name.clone());
-            }
-        }
-        for m in &enabled_mods {
-            if !names.contains(&m.name) {
-                names.push(m.name.clone());
+        let mut names: Vec<String> = src_by_name.keys().cloned().collect();
+        for map in [&stg_by_name, &ena_by_name] {
+            for name in map.keys() {
+                if !names.contains(name) {
+                    names.push(name.clone());
+                }
             }
         }
 
         let mut reconciled = Vec::new();
         for name in names {
-            let src = source_by_name.get(&name).cloned();
-            let stg = staged_mods.iter().find(|e| e.name == name).cloned();
-            let ena = enabled_mods.iter().find(|e| e.name == name).cloned();
+            let src = src_by_name.get(&name).cloned();
+            let stg = stg_by_name.get(&name).cloned();
+            let ena = ena_by_name.get(&name).cloned();
 
             let status = if let (Some(ref s), Some(ref t)) = (&src, &stg) {
                 if is_newer(&s.path, &t.path) {

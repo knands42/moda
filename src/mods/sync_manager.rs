@@ -28,6 +28,8 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        self.disable_mods(state)?;
+
         let mods_folder = self.mod_registry.list_mods_folder()?;
 
         for entry in mods_folder {
@@ -83,6 +85,26 @@ impl<G: Game> SyncManager<G> {
         )?;
 
         state.set_enabled(&mod_entry.name);
+        Ok(())
+    }
+
+    pub fn disable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        let game_mods_path = self.game.game_mod_path();
+        let game_mods = self.mod_registry.list_game_mods_folder(&game_mods_path)?;
+        for entry in game_mods {
+            self.disable_one_mod(&entry, state)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn disable_one_mod(&self, mod_entry: &ModEntry, state: &mut ModState) -> Result<(), ModManagerError> {
+        let game_mods_path = self.game.game_mod_path();
+        Enabler::deactivate(&game_mods_path)?;
+
+        // TODO: Check if the mod is still in the stage folder, if not set downloaded or remove it
+
+        state.set_disabled(&mod_entry.name);
         Ok(())
     }
 
