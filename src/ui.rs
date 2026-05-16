@@ -1,4 +1,4 @@
-use crate::config::load_config;
+use crate::config::Config;
 use crate::games::{Game, StardewValley};
 use crate::mods::mod_registry::ModStatus;
 use crate::mods::{ModState, SyncManager};
@@ -41,7 +41,7 @@ pub struct App {
 
 impl Default for App {
     fn default() -> Self {
-        let (game_path, mods_path, staging_path, game_mod_path) = match load_config() {
+        let (game_path, mods_path, staging_path, game_mod_path) = match Config::load_config() {
             Some(config) => {
                 let discovered = StardewValley::discover_path(&config);
                 match discovered {
@@ -91,7 +91,7 @@ impl App {
     }
 
     fn sync_manager(&self) -> Result<SyncManager<StardewValley>, String> {
-        let config = load_config().ok_or("Failed to load config")?;
+        let config = Config::load_config().ok_or("Failed to load config")?;
         let game_path = StardewValley::discover_path(&config).ok_or("Stardew Valley not found")?;
         let game = StardewValley::new(game_path);
         Ok(SyncManager::new(game, config))
@@ -275,7 +275,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
 fn tab_button<'a>(label: &'a str, tab: &Tab, app: &'a App) -> Element<'a, Message> {
     let is_active = app.current_tab == *tab;
     let mut btn = button(text(label).size(16));
-    if is_active {
+    if !is_active {
         btn = btn.on_press(Message::TabSelected(tab.clone()));
     }
     btn.into()

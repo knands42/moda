@@ -62,14 +62,6 @@ moda/
 - **Nexus API**: Requires API key; store in `~/.config/moda/config.toml`
 - **Collections**: Two formats planned — native JSON format + Nexus collections import
 
-## Teaching Approach
-When asked for guidance, the agent should:
-- Give **architecture advice** focused on modularity, extensibility, and readability
-- Prefer **hints and skeletons** over full implementations — explain the shape of the solution, not the filled-in code
-- Point to relevant Rust patterns (traits, enums, ownership) without writing the code
-- Reference existing code in the project as examples where possible
-- Suggest test skeletons to drive the design (TDD)
-
 ## Workflow
 1. Define trait/tests for a module
 2. Get tests passing (agent provides implementation hints only)

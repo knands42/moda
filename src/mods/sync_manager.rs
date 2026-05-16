@@ -27,9 +27,8 @@ impl<G: Game> SyncManager<G> {
         self.mod_registry.reconcile(game_mod_path)
     }
 
+    // TODO: what to do with new updated mods, will it always disabled first, stage and then re-enabled?
     pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
-        self.disable_mods(state)?;
-
         let mods_folder = self.mod_registry.list_mods_folder()?;
 
         for entry in mods_folder {
