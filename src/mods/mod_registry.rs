@@ -5,6 +5,7 @@ use crate::mods::mod_state::ModState;
 use std::fs;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
+use zip::ZipArchive;
 
 #[derive(Clone)]
 pub struct ModMetadata {}
@@ -112,13 +113,15 @@ impl<G: Game> ModRegistry<G> {
         let staged_mods = self.list_staging_folder()?;
         let enabled_mods = self.list_game_mods_folder(game_mod_path)?;
 
-        let mut names: Vec<String> = Vec::new();
+        // Map effective name → source entry
+        let mut source_by_name: std::collections::HashMap<String, ModEntry> =
+            std::collections::HashMap::new();
         for m in &source_mods {
-            let name = strip_zip_ext(&m.name);
-            if !names.contains(&name) {
-                names.push(name);
-            }
+            let name = effective_name(m);
+            source_by_name.insert(name, m.clone());
         }
+
+        let mut names: Vec<String> = source_by_name.keys().cloned().collect();
         for m in &staged_mods {
             if !names.contains(&m.name) {
                 names.push(m.name.clone());
@@ -132,10 +135,7 @@ impl<G: Game> ModRegistry<G> {
 
         let mut reconciled = Vec::new();
         for name in names {
-            let src = source_mods
-                .iter()
-                .find(|e| strip_zip_ext(&e.name) == name)
-                .cloned();
+            let src = source_by_name.get(&name).cloned();
             let stg = staged_mods.iter().find(|e| e.name == name).cloned();
             let ena = enabled_mods.iter().find(|e| e.name == name).cloned();
 
@@ -252,6 +252,58 @@ impl<G: Game> ModRegistry<G> {
 
 fn strip_zip_ext(name: &str) -> String {
     name.strip_suffix(".zip").unwrap_or(name).to_string()
+}
+
+fn effective_name(entry: &ModEntry) -> String {
+    if entry.kind == ModEntryKind::ZipArchive {
+        zip_expected_name(&entry.path, &entry.name)
+    } else {
+        entry.name.clone()
+    }
+}
+
+fn zip_expected_name(zip_path: &Path, zip_name: &str) -> String {
+    match zip_top_level_dir(zip_path) {
+        Ok(Some(dir)) => dir,
+        _ => strip_zip_ext(zip_name),
+    }
+}
+
+fn zip_top_level_dir(zip_path: &Path) -> Result<Option<String>, ModManagerError> {
+    let file = fs::File::open(zip_path)?;
+    let mut archive = ZipArchive::new(file).map_err(|e| {
+        ModManagerError::IoError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+    })?;
+
+    let mut top_names: Vec<String> = Vec::new();
+    let mut has_subdir = false;
+    for i in 0..archive.len() {
+        let entry = archive.by_index(i).map_err(|e| {
+            ModManagerError::IoError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+        })?;
+
+        let Some(path) = entry.enclosed_name() else {
+            continue;
+        };
+        let components: Vec<_> = path.components().collect();
+        let Some(first) = components.first() else {
+            continue;
+        };
+        let name = first.as_os_str().to_string_lossy().to_string();
+        if !top_names.contains(&name) {
+            top_names.push(name);
+        }
+        if components.len() > 1 {
+            has_subdir = true;
+        }
+    }
+
+    // Single unique top-level entry with subdirectory structure → wrapping directory
+    if top_names.len() == 1 && has_subdir {
+        Ok(Some(top_names[0].clone()))
+    } else {
+        Ok(None)
+    }
 }
 
 fn is_newer(a: &Path, b: &Path) -> bool {
