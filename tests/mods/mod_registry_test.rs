@@ -360,7 +360,10 @@ fn test_reconcile_zip_mod() {
     assert_eq!(result.mods[0].name, "SomeMod");
     assert_eq!(result.mods[0].status, ModStatus::Downloaded);
     assert!(result.mods[0].source_entry.is_some());
-    assert_eq!(result.mods[0].source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
+    assert_eq!(
+        result.mods[0].source_entry.as_ref().unwrap().kind,
+        ModEntryKind::ZipArchive
+    );
 }
 
 #[test]
@@ -394,13 +397,13 @@ fn test_reconcile_multiple_mixed_states() {
     let result = registry.reconcile(&game_path).unwrap();
 
     assert_eq!(result.mods.len(), 3);
-    
+
     let mod_a = result.mods.iter().find(|m| m.name == "ModA").unwrap();
     assert_eq!(mod_a.status, ModStatus::Downloaded);
-    
+
     let mod_b = result.mods.iter().find(|m| m.name == "ModB").unwrap();
     assert_eq!(mod_b.status, ModStatus::Staged);
-    
+
     let mod_c = result.mods.iter().find(|m| m.name == "ModC").unwrap();
     assert_eq!(mod_c.status, ModStatus::Enabled);
 }

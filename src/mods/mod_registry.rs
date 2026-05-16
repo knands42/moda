@@ -2,14 +2,12 @@ use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
 use crate::mods::mod_state::ModState;
+use std::fs;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-use std::fs;
 
 #[derive(Clone)]
-pub struct ModMetadata {
-
-}
+pub struct ModMetadata {}
 #[derive(Clone)]
 pub struct ModEntry {
     pub name: String,
@@ -78,7 +76,10 @@ impl<G: Game> ModRegistry<G> {
         self.get_one_mod(staged_mods_path, name)
     }
 
-    fn list_game_mods_folder(&self, game_mod_path: &Path) -> Result<Vec<ModEntry>, ModManagerError> {
+    fn list_game_mods_folder(
+        &self,
+        game_mod_path: &Path,
+    ) -> Result<Vec<ModEntry>, ModManagerError> {
         let dir = match fs::read_dir(game_mod_path) {
             Ok(dir) => dir,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -131,7 +132,10 @@ impl<G: Game> ModRegistry<G> {
 
         let mut reconciled = Vec::new();
         for name in names {
-            let src = source_mods.iter().find(|e| strip_zip_ext(&e.name) == name).cloned();
+            let src = source_mods
+                .iter()
+                .find(|e| strip_zip_ext(&e.name) == name)
+                .cloned();
             let stg = staged_mods.iter().find(|e| e.name == name).cloned();
             let ena = enabled_mods.iter().find(|e| e.name == name).cloned();
 
@@ -184,14 +188,14 @@ impl<G: Game> ModRegistry<G> {
                     name,
                     path: entry.path(),
                     kind: ModEntryKind::ZipArchive,
-                    metadata: None
+                    metadata: None,
                 });
             } else if entry.file_type()?.is_dir() {
                 entries.push(ModEntry {
                     name,
                     path: entry.path(),
                     kind: ModEntryKind::Directory,
-                    metadata: None
+                    metadata: None,
                 });
             }
         }
@@ -221,14 +225,14 @@ impl<G: Game> ModRegistry<G> {
                         name: entry_name,
                         path: entry.path(),
                         kind: ModEntryKind::ZipArchive,
-                        metadata: None
+                        metadata: None,
                     });
                 } else if entry.file_type()?.is_dir() {
                     return Ok(ModEntry {
                         name: entry_name,
                         path: entry.path(),
                         kind: ModEntryKind::Directory,
-                        metadata: None
+                        metadata: None,
                     });
                 }
             }
@@ -253,5 +257,5 @@ fn strip_zip_ext(name: &str) -> String {
 fn is_newer(a: &Path, b: &Path) -> bool {
     let a_mt = fs::metadata(a).ok().and_then(|m| m.modified().ok());
     let b_mt = fs::metadata(b).ok().and_then(|m| m.modified().ok());
-    a_mt.zip(b_mt).map_or(false, |(a, b)| a > b)
+    a_mt.zip(b_mt).is_some_and(|(a, b)| a > b)
 }
