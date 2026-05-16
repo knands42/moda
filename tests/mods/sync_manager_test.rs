@@ -160,11 +160,12 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
+    // State as reconcile would produce: effective name is the wrapping dir name
     let mut state = ModState::from_vec(vec![ReconciledMod {
-        name: "SomeMod".to_string(),
+        name: "WrapDir".to_string(),
         status: ModStatus::Downloaded,
         source_entry: Some(ModEntry {
-            name: "SomeMod.zip".to_string(),
+            name: "WrapDir".to_string(),
             path: zip_path.clone(),
             kind: ModEntryKind::ZipArchive,
             metadata: None,
@@ -174,7 +175,7 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
     }]);
 
     let entry = ModEntry {
-        name: "SomeMod.zip".to_string(),
+        name: "WrapDir".to_string(),
         path: zip_path,
         kind: ModEntryKind::ZipArchive,
         metadata: None,
@@ -183,9 +184,16 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
     // When: staging the wrapping zip
     let result = manager.stage_one_mod(&entry, &mut state);
 
-    // Then: the zip extracts into staging root, preserving the wrap directory
+    // Then: the zip extracts into staging root, and state is updated with the wrap dir name
     assert!(result.is_ok());
     assert!(staging_path.join("WrapDir").join("mod.txt").exists());
+    let snapshot = state.snapshot();
+    assert_eq!(snapshot.len(), 1);
+    assert_eq!(snapshot[0].name, "WrapDir");
+    assert_eq!(snapshot[0].status, ModStatus::Staged);
+    // Ensure the mod named after the zip file is NOT in state (only the wrap dir name)
+    assert!(state.get_mod("WrapDir").is_some());
+    assert!(state.get_mod("SomeMod").is_none());
 }
 
 #[test]

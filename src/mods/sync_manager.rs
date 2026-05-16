@@ -48,18 +48,23 @@ impl<G: Game> SyncManager<G> {
             ModEntryKind::Directory => {
                 let target = staging_path.join(&mod_entry.name);
                 Installer::install(&ModSource::LocalDir(mod_entry.path.clone()), &target)?;
+                state.set_staged(&mod_entry.name);
             }
             ModEntryKind::ZipArchive => {
-                let target = match Installer::zip_wrap_directory(&mod_entry.path)? {
-                    Some(_) => staging_path,
-                    None => staging_path.join(strip_zip_ext(&mod_entry.name)),
+                let (staging_name, target) = match Installer::zip_wrap_directory(&mod_entry.path)? {
+                    Some(dir) => (dir, staging_path),
+                    None => {
+                        let name = strip_zip_ext(&mod_entry.name);
+                        let target = staging_path.join(&name);
+                        (name, target)
+                    }
                 };
                 Installer::install(&ModSource::LocalZip(mod_entry.path.clone()), &target)?;
+                state.set_staged(&staging_name);
             }
-            _ => {}
+            _ => {},
         }
 
-        state.set_staged(&mod_entry.name);
         Ok(())
     }
 
