@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
+use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_registry::{ModEntry, ModEntryKind, ModRegistry, ModStatus};
 use crate::mods::mod_state::ModState;
 use crate::mods::{Enabler, Installer, ModSource};
@@ -42,16 +43,19 @@ impl<G: Game> SyncManager<G> {
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
-        if mod_entry.kind == ModEntryKind::Directory {
-            Installer::install(
-                &ModSource::LocalDir(mod_entry.path.clone()),
-                staging_path.as_path(),
-            )?;
-        } else if mod_entry.kind == ModEntryKind::ZipArchive {
-            Installer::install(
-                &ModSource::LocalZip(mod_entry.path.clone()),
-                staging_path.as_path(),
-            )?;
+        match mod_entry.kind {
+            ModEntryKind::Directory => {
+                let target = staging_path.join(&mod_entry.name);
+                Installer::install(&ModSource::LocalDir(mod_entry.path.clone()), &target)?;
+            }
+            ModEntryKind::ZipArchive => {
+                let target = match Installer::zip_wrap_directory(&mod_entry.path)? {
+                    Some(_) => staging_path,
+                    None => staging_path.join(strip_zip_ext(&mod_entry.name)),
+                };
+                Installer::install(&ModSource::LocalZip(mod_entry.path.clone()), &target)?;
+            }
+            _ => {}
         }
 
         state.set_staged(&mod_entry.name);

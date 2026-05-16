@@ -6,6 +6,6 @@ mod mod_state;
 mod sync_manager;
 
 pub use enabler::Enabler;
-pub use installer::{Installer, ModSource};
+pub use installer::{strip_zip_ext, Installer, ModSource};
 pub use mod_state::ModState;
 pub use sync_manager::SyncManager;

@@ -367,6 +367,114 @@ fn test_reconcile_zip_mod() {
 }
 
 #[test]
+fn test_reconcile_wrapped_zip_matches_staging() {
+    let temp = TempDir::new().unwrap();
+    let game_path = temp.path().join("game").join("Mods");
+    let mods_path = temp.path().join("mods").join("stardew_valley");
+    let staging_path = temp.path().join("staging").join("stardew_valley");
+    fs::create_dir_all(&mods_path).unwrap();
+    fs::create_dir_all(&staging_path).unwrap();
+
+    // Zip wraps in a single directory
+    let zip_path = mods_path.join("SomeMod.zip");
+    let zip_file = fs::File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("SomeMod/mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    // Execute the reconcile
+    let config = make_config(
+        temp.path().join("mods").to_str().unwrap(),
+        temp.path().join("staging").to_str().unwrap(),
+    );
+    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
+
+    let result = registry.reconcile(&game_path).unwrap();
+
+    assert_eq!(result.mods.len(), 1);
+    assert_eq!(result.mods[0].name, "SomeMod");
+    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
+}
+
+#[test]
+fn test_reconcile_wrapped_zip_different_name() {
+    let temp = TempDir::new().unwrap();
+    let game_path = temp.path().join("game").join("Mods");
+    let mods_path = temp.path().join("mods").join("stardew_valley");
+    let staging_path = temp.path().join("staging").join("stardew_valley");
+    fs::create_dir_all(&mods_path).unwrap();
+    fs::create_dir_all(&staging_path).unwrap();
+
+    // Zip is "Mod.zip" but wraps in "SomeMod-v2/"
+    let zip_path = mods_path.join("Mod.zip");
+    let zip_file = fs::File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("SomeMod-v2/mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer
+        .start_file("SomeMod-v2/sub/asset.dat", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    // Execute the reconcile
+    let config = make_config(
+        temp.path().join("mods").to_str().unwrap(),
+        temp.path().join("staging").to_str().unwrap(),
+    );
+    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
+
+    let result = registry.reconcile(&game_path).unwrap();
+
+    assert_eq!(result.mods.len(), 1);
+    assert_eq!(result.mods[0].name, "SomeMod-v2");
+    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
+    // Source entry should still point to the original zip
+    assert_eq!(
+        result.mods[0].source_entry.as_ref().unwrap().name,
+        "Mod.zip"
+    );
+}
+
+#[test]
+fn test_reconcile_zip_with_dir_and_root_files() {
+    let temp = TempDir::new().unwrap();
+    let game_path = temp.path().join("game").join("Mods");
+    let mods_path = temp.path().join("mods").join("stardew_valley");
+    let staging_path = temp.path().join("staging").join("stardew_valley");
+    fs::create_dir_all(&mods_path).unwrap();
+    fs::create_dir_all(&staging_path).unwrap();
+
+    // Zip has a wrapping dir AND a file at root (mixed)
+    let zip_path = mods_path.join("SomeMod-1.0.0.zip");
+    let zip_file = fs::File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("SomeMod/mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer
+        .start_file("readme.md", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    // Execute the reconcile
+    let config = make_config(
+        temp.path().join("mods").to_str().unwrap(),
+        temp.path().join("staging").to_str().unwrap(),
+    );
+    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
+
+    let result = registry.reconcile(&game_path).unwrap();
+
+    // Multiple top-level entries → fallback to strip_zip_ext("SomeMod.zip") = "SomeMod"
+    assert_eq!(result.mods.len(), 1);
+    assert_eq!(result.mods[0].name, "SomeMod-1.0.0");
+    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
+}
+
+#[test]
 fn test_reconcile_multiple_mixed_states() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");

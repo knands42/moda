@@ -1,4 +1,4 @@
-use moda::mods::{Installer, ModSource};
+use moda::mods::{strip_zip_ext, Installer, ModSource};
 use std::fs::File;
 use std::io::Write;
 use tempfile::tempdir;
@@ -83,4 +83,121 @@ fn test_install_from_dir() {
         std::fs::read_to_string(target_dir.join("subfolder/subsubfolder/mod3.txt")).unwrap(),
         "mod3 info"
     )
+}
+
+#[test]
+fn test_strip_zip_ext_removes_zip_extension() {
+    assert_eq!(strip_zip_ext("SomeMod.zip"), "SomeMod");
+    assert_eq!(strip_zip_ext("archive.zip"), "archive");
+}
+
+#[test]
+fn test_strip_zip_ext_no_extension() {
+    assert_eq!(strip_zip_ext("SomeMod"), "SomeMod");
+    assert_eq!(strip_zip_ext("SomeMod.tar.gz"), "SomeMod.tar.gz");
+}
+
+#[test]
+fn test_zip_wrap_directory_single_wrapping_dir() {
+    let temp = tempdir().unwrap();
+    let zip_path = temp.path().join("mod.zip");
+    let zip_file = File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("SomeMod/mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer
+        .start_file("SomeMod/assets/other.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    let result = Installer::zip_wrap_directory(&zip_path).unwrap();
+
+    assert_eq!(result, Some("SomeMod".to_string()));
+}
+
+#[test]
+fn test_zip_wrap_directory_files_at_root() {
+    let temp = tempdir().unwrap();
+    let zip_path = temp.path().join("mod.zip");
+    let zip_file = File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer
+        .start_file("readme.md", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    let result = Installer::zip_wrap_directory(&zip_path).unwrap();
+
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_zip_wrap_directory_single_file_at_root() {
+    let temp = tempdir().unwrap();
+    let zip_path = temp.path().join("mod.zip");
+    let zip_file = File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    let result = Installer::zip_wrap_directory(&zip_path).unwrap();
+
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_zip_wrap_directory_multiple_top_level_dirs() {
+    let temp = tempdir().unwrap();
+    let zip_path = temp.path().join("mod.zip");
+    let zip_file = File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("folder1/mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer
+        .start_file("folder2/other.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    let result = Installer::zip_wrap_directory(&zip_path).unwrap();
+
+    assert_eq!(result, None);
+}
+
+#[test]
+fn test_zip_wrap_directory_nested_single_dir() {
+    let temp = tempdir().unwrap();
+    let zip_path = temp.path().join("mod.zip");
+    let zip_file = File::create(&zip_path).unwrap();
+    let mut zip_writer = ZipWriter::new(zip_file);
+    zip_writer
+        .start_file("SomeMod-1.0.0/sub/mod.txt", SimpleFileOptions::default())
+        .unwrap();
+    zip_writer
+        .start_file(
+            "SomeMod-1.0.0/sub/deep/asset.dat",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+    zip_writer.finish().unwrap();
+
+    let result = Installer::zip_wrap_directory(&zip_path).unwrap();
+
+    assert_eq!(result, Some("SomeMod-1.0.0".to_string()));
+}
+
+#[test]
+fn test_zip_wrap_directory_invalid_path() {
+    let temp = tempdir().unwrap();
+    let zip_path = temp.path().join("nonexistent.zip");
+
+    let result = Installer::zip_wrap_directory(&zip_path);
+
+    assert!(result.is_err());
 }

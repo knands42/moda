@@ -61,7 +61,7 @@ fn test_stage_one_mod_dir() {
     let result = manager.stage_one_mod(&entry, &mut state);
 
     assert!(result.is_ok());
-    assert!(staging_path.join("mod.txt").exists());
+    assert!(staging_path.join("SomeMod").join("mod.txt").exists());
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn test_stage_one_mod_zip() {
     let result = manager.stage_one_mod(&entry, &mut state);
 
     assert!(result.is_ok());
-    assert!(staging_path.join("mod.txt").exists());
+    assert!(staging_path.join("SomeMod").join("mod.txt").exists());
 }
 
 #[test]
@@ -183,5 +183,5 @@ fn test_sync_all_full_pipeline() {
     let result = manager.sync_all(&mut state);
 
     assert!(result.is_ok());
-    assert!(staging_path.join("mod.txt").exists());
+    assert!(staging_path.join("SomeMod").join("mod.txt").exists());
 }

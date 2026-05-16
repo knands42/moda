@@ -1,11 +1,12 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
+use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
+use crate::mods::Installer;
 use std::fs;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-use zip::ZipArchive;
 
 #[derive(Clone)]
 pub struct ModMetadata {}
@@ -250,59 +251,14 @@ impl<G: Game> ModRegistry<G> {
     }
 }
 
-fn strip_zip_ext(name: &str) -> String {
-    name.strip_suffix(".zip").unwrap_or(name).to_string()
-}
-
 fn effective_name(entry: &ModEntry) -> String {
     if entry.kind == ModEntryKind::ZipArchive {
-        zip_expected_name(&entry.path, &entry.name)
+        match Installer::zip_wrap_directory(&entry.path) {
+            Ok(Some(dir)) => dir,
+            _ => strip_zip_ext(&entry.name),
+        }
     } else {
         entry.name.clone()
-    }
-}
-
-fn zip_expected_name(zip_path: &Path, zip_name: &str) -> String {
-    match zip_top_level_dir(zip_path) {
-        Ok(Some(dir)) => dir,
-        _ => strip_zip_ext(zip_name),
-    }
-}
-
-fn zip_top_level_dir(zip_path: &Path) -> Result<Option<String>, ModManagerError> {
-    let file = fs::File::open(zip_path)?;
-    let mut archive = ZipArchive::new(file).map_err(|e| {
-        ModManagerError::IoError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-    })?;
-
-    let mut top_names: Vec<String> = Vec::new();
-    let mut has_subdir = false;
-    for i in 0..archive.len() {
-        let entry = archive.by_index(i).map_err(|e| {
-            ModManagerError::IoError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-        })?;
-
-        let Some(path) = entry.enclosed_name() else {
-            continue;
-        };
-        let components: Vec<_> = path.components().collect();
-        let Some(first) = components.first() else {
-            continue;
-        };
-        let name = first.as_os_str().to_string_lossy().to_string();
-        if !top_names.contains(&name) {
-            top_names.push(name);
-        }
-        if components.len() > 1 {
-            has_subdir = true;
-        }
-    }
-
-    // Single unique top-level entry with subdirectory structure → wrapping directory
-    if top_names.len() == 1 && has_subdir {
-        Ok(Some(top_names[0].clone()))
-    } else {
-        Ok(None)
     }
 }
 
