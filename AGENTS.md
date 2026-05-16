@@ -50,19 +50,6 @@ moda/
         └── installer_test.rs
 ```
 
-### Key Traits to Define Early
-```rust
-// games/mod.rs
-pub trait Game {
-    fn name(&self) -> &str;
-    fn game_path(&self) -> PathBuf;
-    fn mods_path(&self) -> PathBuf;
-    fn staging_path(&self) -> PathBuf;
-    fn discover_path(config: &Config) -> Option<PathBuf>;
-    fn registry_id() -> &'static str;
-}
-```
-
 ## Testing Strategy
 - Write tests **before** implementation (TDD approach)
 - Test files mirror module structure in `tests/`
@@ -72,7 +59,7 @@ pub trait Game {
 ## Important Constraints
 - **Rust learning project**: Focus on architecture guidance + test skeletons, not full implementations
 - **Iced UI**: State management via `iced::Application` or `Sandbox`
-- **Nexus API**: Requires API key; store in `~/.config/modmanager/config.toml`
+- **Nexus API**: Requires API key; store in `~/.config/moda/config.toml`
 - **Collections**: Two formats planned — native JSON format + Nexus collections import
 
 ## Workflow

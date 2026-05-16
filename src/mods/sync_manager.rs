@@ -64,6 +64,47 @@ impl<G: Game> SyncManager<G> {
         Ok(())
     }
 
+    pub fn unstage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        let staging_path = self.mod_registry.list_staging_folder()?;
+        for entry in staging_path {
+            self.unstage_one_mod(&entry, state)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn unstage_one_mod(
+        &self,
+        mod_entry: &ModEntry,
+        state: &mut ModState,
+    ) -> Result<(), ModManagerError> {
+        if mod_entry.path.exists() {
+            Installer::uninstall_from_dir(&mod_entry.path)?;
+        }
+
+        match self.mod_registry.get_mod_by_name(&mod_entry.name) {
+            Ok(_) => {
+                if state
+                    .mods
+                    .iter_mut()
+                    .find(|m| m.name == mod_entry.name)
+                    .is_some()
+                {
+                    state.set_unstaged(&mod_entry.name);
+                } else {
+                    self.mod_registry
+                        .reconcile(self.game.game_mod_path().as_path())?;
+                }
+                Ok(())
+            }
+            Err(ModManagerError::ModNotFound(_)) => {
+                state.remove(&mod_entry.name);
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
+
     pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         let staging_path = self.mod_registry.list_staging_folder()?;
         for entry in staging_path {
@@ -98,14 +139,23 @@ impl<G: Game> SyncManager<G> {
         Ok(())
     }
 
-    pub fn disable_one_mod(&self, mod_entry: &ModEntry, state: &mut ModState) -> Result<(), ModManagerError> {
-        let game_mods_path = self.game.game_mod_path();
-        Enabler::deactivate(&game_mods_path)?;
+    pub fn disable_one_mod(
+        &self,
+        mod_entry: &ModEntry,
+        state: &mut ModState,
+    ) -> Result<(), ModManagerError> {
+        if mod_entry.path.exists() {
+            Enabler::deactivate(&mod_entry.path)?;
+        }
 
-        // TODO: Check if the mod is still in the stage folder, if not set downloaded or remove it
-
-        state.set_disabled(&mod_entry.name);
-        Ok(())
+        match self.mod_registry.get_staged_mod_by_name(&mod_entry.name) {
+            Ok(_) => {
+                state.set_disabled(&mod_entry.name);
+                Ok(())
+            }
+            Err(ModManagerError::ModNotFound(_)) => self.unstage_one_mod(mod_entry, state),
+            Err(e) => Err(e),
+        }
     }
 
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {

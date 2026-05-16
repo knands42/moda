@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
 use crate::mods::Installer;
+use std::collections::HashMap;
 use std::fs;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
@@ -93,7 +93,7 @@ impl<G: Game> ModRegistry<G> {
         for entry in dir {
             let entry = entry?;
             let ft = entry.file_type()?;
-            if !ft.is_dir() && !ft.is_symlink() {
+            if !ft.is_symlink() {
                 continue;
             }
             let name = entry
@@ -116,9 +116,18 @@ impl<G: Game> ModRegistry<G> {
         let enabled_mods = self.list_game_mods_folder(game_mod_path)?;
 
         // Map effective name → source entry
-        let src_by_name: HashMap<String, ModEntry> = source_mods.iter().map(|m| (effective_name(m), m.clone())).collect();
-        let stg_by_name: HashMap<String, ModEntry> = staged_mods.iter().map(|m| (m.name.clone(), m.clone())).collect();
-        let ena_by_name: HashMap<String, ModEntry> = enabled_mods.iter().map(|m| (m.name.clone(), m.clone())).collect();
+        let src_by_name: HashMap<String, ModEntry> = source_mods
+            .iter()
+            .map(|m| (effective_name(m), m.clone()))
+            .collect();
+        let stg_by_name: HashMap<String, ModEntry> = staged_mods
+            .iter()
+            .map(|m| (m.name.clone(), m.clone()))
+            .collect();
+        let ena_by_name: HashMap<String, ModEntry> = enabled_mods
+            .iter()
+            .map(|m| (m.name.clone(), m.clone()))
+            .collect();
 
         let mut names: Vec<String> = src_by_name.keys().cloned().collect();
         for map in [&stg_by_name, &ena_by_name] {

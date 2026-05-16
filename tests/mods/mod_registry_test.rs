@@ -282,7 +282,7 @@ fn test_reconcile_enabled_mod() {
     fs::create_dir_all(&game_path).unwrap();
     fs::create_dir(mods_path.join("SomeMod")).unwrap();
     fs::create_dir(staging_path.join("SomeMod")).unwrap();
-    fs::create_dir(game_path.join("SomeMod")).unwrap();
+    std::os::unix::fs::symlink(staging_path.join("SomeMod"), game_path.join("SomeMod")).unwrap();
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
@@ -298,6 +298,35 @@ fn test_reconcile_enabled_mod() {
     assert!(result.mods[0].source_entry.is_some());
     assert!(result.mods[0].staging_entry.is_some());
     assert!(result.mods[0].game_entry.is_some());
+}
+
+#[test]
+fn test_reconcile_enabled_failed_if_not_symlink_mod() {
+    let temp = TempDir::new().unwrap();
+    let game_path = temp.path().join("game").join("Mods");
+    let mods_path = temp.path().join("mods").join("stardew_valley");
+    let staging_path = temp.path().join("staging").join("stardew_valley");
+    fs::create_dir_all(&mods_path).unwrap();
+    fs::create_dir_all(&staging_path).unwrap();
+    fs::create_dir_all(&game_path).unwrap();
+    fs::create_dir(mods_path.join("SomeMod")).unwrap();
+    fs::create_dir(staging_path.join("SomeMod")).unwrap();
+    fs::create_dir(game_path.join("SomeMod")).unwrap();
+
+    let config = make_config(
+        temp.path().join("mods").to_str().unwrap(),
+        temp.path().join("staging").to_str().unwrap(),
+    );
+    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
+
+    let result = registry.reconcile(&game_path).unwrap();
+
+    assert_eq!(result.mods.len(), 1);
+    assert_eq!(result.mods[0].name, "SomeMod");
+    assert_eq!(result.mods[0].status, ModStatus::Staged);
+    assert!(result.mods[0].source_entry.is_some());
+    assert!(result.mods[0].staging_entry.is_some());
+    assert!(result.mods[0].game_entry.is_none());
 }
 
 #[test]
@@ -494,7 +523,7 @@ fn test_reconcile_multiple_mixed_states() {
     // Enabled mod
     fs::create_dir(mods_path.join("ModC")).unwrap();
     fs::create_dir(staging_path.join("ModC")).unwrap();
-    fs::create_dir(game_path.join("ModC")).unwrap();
+    std::os::unix::fs::symlink(staging_path.join("ModC"), game_path.join("ModC")).unwrap();
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),

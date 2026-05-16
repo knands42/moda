@@ -63,6 +63,14 @@ impl Installer {
         Ok(())
     }
 
+    pub fn uninstall_from_dir(file_path: &Path) -> Result<(), ModManagerError> {
+        match std::fs::remove_dir_all(file_path) {
+            Ok(_) => Ok(()),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(ModManagerError::IoError(e)),
+        }
+    }
+
     fn install_from_zip(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
         let file = File::open(file_path)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
