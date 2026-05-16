@@ -217,7 +217,7 @@ fn test_reconcile_empty() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert!(result.mods.is_empty());
+    assert!(result.snapshot().is_empty());
 }
 
 #[test]
@@ -236,12 +236,12 @@ fn test_reconcile_downloaded_mod() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
-    assert!(result.mods[0].source_entry.is_some());
-    assert!(result.mods[0].staging_entry.is_none());
-    assert!(result.mods[0].game_entry.is_none());
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
+    assert!(result.snapshot()[0].source_entry.is_some());
+    assert!(result.snapshot()[0].staging_entry.is_none());
+    assert!(result.snapshot()[0].game_entry.is_none());
 }
 
 #[test]
@@ -263,12 +263,12 @@ fn test_reconcile_staged_mod() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Staged);
-    assert!(result.mods[0].source_entry.is_some());
-    assert!(result.mods[0].staging_entry.is_some());
-    assert!(result.mods[0].game_entry.is_none());
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Staged);
+    assert!(result.snapshot()[0].source_entry.is_some());
+    assert!(result.snapshot()[0].staging_entry.is_some());
+    assert!(result.snapshot()[0].game_entry.is_none());
 }
 
 #[test]
@@ -292,12 +292,12 @@ fn test_reconcile_enabled_mod() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Enabled);
-    assert!(result.mods[0].source_entry.is_some());
-    assert!(result.mods[0].staging_entry.is_some());
-    assert!(result.mods[0].game_entry.is_some());
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Enabled);
+    assert!(result.snapshot()[0].source_entry.is_some());
+    assert!(result.snapshot()[0].staging_entry.is_some());
+    assert!(result.snapshot()[0].game_entry.is_some());
 }
 
 #[test]
@@ -321,12 +321,12 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Staged);
-    assert!(result.mods[0].source_entry.is_some());
-    assert!(result.mods[0].staging_entry.is_some());
-    assert!(result.mods[0].game_entry.is_none());
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Staged);
+    assert!(result.snapshot()[0].source_entry.is_some());
+    assert!(result.snapshot()[0].staging_entry.is_some());
+    assert!(result.snapshot()[0].game_entry.is_none());
 }
 
 #[test]
@@ -356,9 +356,9 @@ fn test_reconcile_modified_mod() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Modified);
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Modified);
 }
 
 #[test]
@@ -385,12 +385,12 @@ fn test_reconcile_zip_mod() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
-    assert!(result.mods[0].source_entry.is_some());
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
+    assert!(result.snapshot()[0].source_entry.is_some());
     assert_eq!(
-        result.mods[0].source_entry.as_ref().unwrap().kind,
+        result.snapshot()[0].source_entry.as_ref().unwrap().kind,
         ModEntryKind::ZipArchive
     );
 }
@@ -422,9 +422,9 @@ fn test_reconcile_wrapped_zip_matches_staging() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod");
-    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
 }
 
 #[test]
@@ -457,12 +457,12 @@ fn test_reconcile_wrapped_zip_different_name() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod-v2");
-    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod-v2");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
     // Source entry should still point to the original zip
     assert_eq!(
-        result.mods[0].source_entry.as_ref().unwrap().name,
+        result.snapshot()[0].source_entry.as_ref().unwrap().name,
         "Mod.zip"
     );
 }
@@ -498,9 +498,9 @@ fn test_reconcile_zip_with_dir_and_root_files() {
     let result = registry.reconcile(&game_path).unwrap();
 
     // Multiple top-level entries → fallback to strip_zip_ext("SomeMod.zip") = "SomeMod"
-    assert_eq!(result.mods.len(), 1);
-    assert_eq!(result.mods[0].name, "SomeMod-1.0.0");
-    assert_eq!(result.mods[0].status, ModStatus::Downloaded);
+    assert_eq!(result.snapshot().len(), 1);
+    assert_eq!(result.snapshot()[0].name, "SomeMod-1.0.0");
+    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
 }
 
 #[test]
@@ -533,14 +533,17 @@ fn test_reconcile_multiple_mixed_states() {
 
     let result = registry.reconcile(&game_path).unwrap();
 
-    assert_eq!(result.mods.len(), 3);
+    assert_eq!(result.snapshot().len(), 3);
 
-    let mod_a = result.mods.iter().find(|m| m.name == "ModA").unwrap();
+    let snapshot = result.snapshot();
+    let mod_a = snapshot.iter().find(|m| m.name == "ModA").unwrap();
     assert_eq!(mod_a.status, ModStatus::Downloaded);
 
-    let mod_b = result.mods.iter().find(|m| m.name == "ModB").unwrap();
+    let snapshot = result.snapshot();
+    let mod_b = snapshot.iter().find(|m| m.name == "ModB").unwrap();
     assert_eq!(mod_b.status, ModStatus::Staged);
 
-    let mod_c = result.mods.iter().find(|m| m.name == "ModC").unwrap();
+    let snapshot = result.snapshot();
+    let mod_c = snapshot.iter().find(|m| m.name == "ModC").unwrap();
     assert_eq!(mod_c.status, ModStatus::Enabled);
 }

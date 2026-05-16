@@ -163,25 +163,23 @@ fn test_unstage_one_mod_dir() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
-    let mut state = ModState {
-        mods: vec![ReconciledMod {
+    let mut state = ModState::from_vec(vec![ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Staged,
+        source_entry: Some(ModEntry {
             name: "SomeMod".to_string(),
-            status: ModStatus::Staged,
-            source_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: mods_path.join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            staging_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: staging_path.join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            game_entry: None,
-        }],
-    };
+            path: mods_path.join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+        staging_entry: Some(ModEntry {
+            name: "SomeMod".to_string(),
+            path: staging_path.join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+        game_entry: None,
+    }]);
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
@@ -194,8 +192,8 @@ fn test_unstage_one_mod_dir() {
     assert!(result.is_ok());
     assert!(!staging_path.join("SomeMod").exists());
     assert!(mods_path.join("SomeMod").exists());
-    assert_eq!(state.mods.len(), 1);
-    assert_eq!(state.mods[0].status, ModStatus::Downloaded);
+    assert_eq!(state.snapshot().len(), 1);
+    assert_eq!(state.snapshot()[0].status, ModStatus::Downloaded);
 }
 
 #[test]
@@ -214,20 +212,18 @@ fn test_unstage_one_mod_not_in_downloads() {
     );
     let game = StardewValley::new(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
-    let mut state = ModState {
-        mods: vec![ReconciledMod {
+    let mut state = ModState::from_vec(vec![ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Staged,
+        source_entry: None,
+        staging_entry: Some(ModEntry {
             name: "SomeMod".to_string(),
-            status: ModStatus::Staged,
-            source_entry: None,
-            staging_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: staging_path.join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            game_entry: None,
-        }],
-    };
+            path: staging_path.join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+        game_entry: None,
+    }]);
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
@@ -239,7 +235,7 @@ fn test_unstage_one_mod_not_in_downloads() {
 
     assert!(result.is_ok());
     assert!(!staging_path.join("SomeMod").exists());
-    assert_eq!(state.mods.len(), 0);
+    assert_eq!(state.snapshot().len(), 0);
 }
 
 #[test]
@@ -288,25 +284,23 @@ fn test_disable_one_mod_with_staging() {
     );
     let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
-    let mut state = ModState {
-        mods: vec![ReconciledMod {
+    let mut state = ModState::from_vec(vec![ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Enabled,
+        source_entry: None,
+        staging_entry: Some(ModEntry {
             name: "SomeMod".to_string(),
-            status: ModStatus::Enabled,
-            source_entry: None,
-            staging_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: staging_path.join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            game_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: game_path.join("Mods").join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-        }],
-    };
+            path: staging_path.join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+        game_entry: Some(ModEntry {
+            name: "SomeMod".to_string(),
+            path: game_path.join("Mods").join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+    }]);
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
@@ -318,8 +312,8 @@ fn test_disable_one_mod_with_staging() {
 
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("SomeMod").exists());
-    assert_eq!(state.mods.len(), 1);
-    assert_eq!(state.mods[0].status, ModStatus::Staged);
+    assert_eq!(state.snapshot().len(), 1);
+    assert_eq!(state.snapshot()[0].status, ModStatus::Staged);
 }
 
 #[test]
@@ -346,25 +340,23 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
     );
     let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
-    let mut state = ModState {
-        mods: vec![ReconciledMod {
+    let mut state = ModState::from_vec(vec![ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Enabled,
+        source_entry: Some(ModEntry {
             name: "SomeMod".to_string(),
-            status: ModStatus::Enabled,
-            source_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: mods_path.join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            staging_entry: None,
-            game_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: game_path.join("Mods").join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-        }],
-    };
+            path: mods_path.join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+        staging_entry: None,
+        game_entry: Some(ModEntry {
+            name: "SomeMod".to_string(),
+            path: game_path.join("Mods").join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+    }]);
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
@@ -376,8 +368,8 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
 
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("SomeMod").exists());
-    assert_eq!(state.mods.len(), 1);
-    assert_eq!(state.mods[0].status, ModStatus::Downloaded);
+    assert_eq!(state.snapshot().len(), 1);
+    assert_eq!(state.snapshot()[0].status, ModStatus::Downloaded);
 }
 
 #[test]
@@ -398,20 +390,18 @@ fn test_disable_one_mod_only_in_game_mods() {
     );
     let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
-    let mut state = ModState {
-        mods: vec![ReconciledMod {
+    let mut state = ModState::from_vec(vec![ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Enabled,
+        source_entry: None,
+        staging_entry: None,
+        game_entry: Some(ModEntry {
             name: "SomeMod".to_string(),
-            status: ModStatus::Enabled,
-            source_entry: None,
-            staging_entry: None,
-            game_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: game_path.join("Mods").join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-        }],
-    };
+            path: game_path.join("Mods").join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+    }]);
 
     let entry = ModEntry {
         name: "SomeMod".to_string(),
@@ -423,7 +413,7 @@ fn test_disable_one_mod_only_in_game_mods() {
 
     assert!(result.is_ok());
     assert!(!game_path.join("Mods").join("SomeMod").exists());
-    assert_eq!(state.mods.len(), 0);
+    assert_eq!(state.snapshot().len(), 0);
 }
 
 #[test]
@@ -444,20 +434,18 @@ fn test_sync_all_full_pipeline() {
     let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
 
-    let mut state = ModState {
-        mods: vec![ReconciledMod {
+    let mut state = ModState::from_vec(vec![ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Downloaded,
+        source_entry: Some(ModEntry {
             name: "SomeMod".to_string(),
-            status: ModStatus::Downloaded,
-            source_entry: Some(ModEntry {
-                name: "SomeMod".to_string(),
-                path: mods_path.join("SomeMod"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            staging_entry: None,
-            game_entry: None,
-        }],
-    };
+            path: mods_path.join("SomeMod"),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        }),
+        staging_entry: None,
+        game_entry: None,
+    }]);
 
     let result = manager.sync_all(&mut state);
 

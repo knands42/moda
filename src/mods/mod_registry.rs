@@ -138,7 +138,7 @@ impl<G: Game> ModRegistry<G> {
             }
         }
 
-        let mut reconciled = Vec::new();
+        let mut reconciled = HashMap::new();
         for name in names {
             let src = src_by_name.get(&name).cloned();
             let stg = stg_by_name.get(&name).cloned();
@@ -160,16 +160,19 @@ impl<G: Game> ModRegistry<G> {
                 ModStatus::Downloaded
             };
 
-            reconciled.push(ReconciledMod {
-                name,
-                status,
-                source_entry: src,
-                staging_entry: stg,
-                game_entry: ena,
-            });
+            reconciled.insert(
+                name.clone(),
+                ReconciledMod {
+                    name,
+                    status,
+                    source_entry: src,
+                    staging_entry: stg,
+                    game_entry: ena,
+                },
+            );
         }
 
-        Ok(ModState { mods: reconciled })
+        Ok(ModState::new(reconciled))
     }
 
     fn list_folder(&self, source: PathBuf) -> Result<Vec<ModEntry>, ModManagerError> {

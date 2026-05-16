@@ -106,9 +106,7 @@ fn update(app: &mut App, message: Message) {
             Ok(sm) => {
                 let entry = app
                     .mod_state
-                    .mods
-                    .iter()
-                    .find(|m| m.name == name)
+                    .get_mod(&name)
                     .and_then(|m| m.source_entry.clone());
                 match entry {
                     Some(e) => match sm.stage_one_mod(&e, &mut app.mod_state) {
@@ -124,9 +122,7 @@ fn update(app: &mut App, message: Message) {
             Ok(sm) => {
                 let entry = app
                     .mod_state
-                    .mods
-                    .iter()
-                    .find(|m| m.name == name)
+                    .get_mod(&name)
                     .and_then(|m| m.staging_entry.clone());
                 match entry {
                     Some(e) => match sm.enable_one_mod(&e, &mut app.mod_state) {
@@ -240,8 +236,7 @@ fn mod_section<'a>(
 ) -> Element<'a, Message> {
     let entries: Vec<_> = app
         .mod_state
-        .mods
-        .iter()
+        .get_mods()
         .filter(|m| &m.status == status)
         .collect();
 

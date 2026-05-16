@@ -84,12 +84,7 @@ impl<G: Game> SyncManager<G> {
 
         match self.mod_registry.get_mod_by_name(&mod_entry.name) {
             Ok(_) => {
-                if state
-                    .mods
-                    .iter_mut()
-                    .find(|m| m.name == mod_entry.name)
-                    .is_some()
-                {
+                if state.get_mod(&mod_entry.name).is_some() {
                     state.set_unstaged(&mod_entry.name);
                 } else {
                     self.mod_registry
@@ -159,7 +154,7 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
-        let reconciled = state.mods.clone();
+        let reconciled = state.snapshot();
         for m in &reconciled {
             match m.status {
                 ModStatus::Downloaded => {
