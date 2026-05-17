@@ -1,6 +1,5 @@
 use crate::config::Config;
-use crate::games::{Game, MarvelRivals, StardewValley};
-use crate::mods::SyncManager;
+use crate::error::ModManagerError;
 use crate::ui::active_game::ActiveGame;
 
 use super::style;
@@ -8,14 +7,17 @@ use super::widgets::dir_browser::DirBrowser;
 
 use std::path::PathBuf;
 
+type GameCreator = Box<dyn FnOnce(&Config, PathBuf) -> Result<ActiveGame, ModManagerError>>;
+
 pub enum Tab {
     Downloads,
     Staging,
 }
 
 pub struct PathDialogState {
-    pub game_id: String,
+    pub game_name: &'static str,
     pub path: String,
+    pub creator: GameCreator,
 }
 
 pub struct ModaApp {
@@ -47,8 +49,8 @@ impl ModaApp {
             log::warn!("Failed to load config, using fallback defaults");
             Config {
                 nexus_api_key: String::new(),
-                mods_root_path: format!("{}/Mods", home),
-                staging_root_path: format!("{}/Mods/.staging", home),
+                mods_root_path: format!("{}/.moda/mods", home),
+                staging_root_path: format!("{}/.moda/staging", home),
                 game_search_paths: std::collections::HashMap::new(),
             }
         });
@@ -64,42 +66,12 @@ impl ModaApp {
             pending_select: None,
         }
     }
-
-    fn create_game_and_switch(&mut self, game_id: &str, path: PathBuf) {
-        let result = match game_id {
-            "stardew_valley" => {
-                let game = StardewValley::new(path);
-                let sm = SyncManager::new(game, self.config.clone());
-                sm.reconcile(&sm.game_mod_path())
-                    .map(|state| ActiveGame::StardewValley(sm, state))
-            }
-            "marvel_rivals" => {
-                let game = MarvelRivals::new(path);
-                let sm = SyncManager::new(game, self.config.clone());
-                sm.reconcile(&sm.game_mod_path())
-                    .map(|state| ActiveGame::MarvelRivals(sm, state))
-            }
-            _ => unreachable!(),
-        };
-
-        match result {
-            Ok(active) => {
-                self.active_game = Some(active);
-                self.page = Page::ModManager;
-                self.error = None;
-            }
-            Err(e) => {
-                self.error = Some(format!("Failed to initialize game: {}", e));
-            }
-        }
-    }
 }
 
 impl eframe::App for ModaApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         ui.ctx().set_visuals(style::configure_visuals());
 
-        // --- Top bar ---
         egui::Panel::top("top_bar")
             .min_size(0.0)
             .show_inside(ui, |ui| {
@@ -147,7 +119,6 @@ impl eframe::App for ModaApp {
                 ui.add_space(8.0);
             });
 
-        // --- Central content ---
         egui::CentralPanel::default().show_inside(ui, |ui| match self.page {
             Page::GameSelection => {
                 let game = crate::ui::pages::game_selection::render(
@@ -175,15 +146,8 @@ impl eframe::App for ModaApp {
 
         let ctx = ui.ctx();
 
-        // --- Path dialog ---
         if self.path_dialog.is_some() {
-            let game_id = self.path_dialog.as_ref().unwrap().game_id.clone();
-            let game_name = match game_id.as_str() {
-                "stardew_valley" => StardewValley::name(),
-                "marvel_rivals" => MarvelRivals::name(),
-                _ => "Unknown",
-            };
-
+            let game_name = self.path_dialog.as_ref().unwrap().game_name;
             let mut close = false;
             let mut confirm = false;
             let mut browse = false;
@@ -264,13 +228,24 @@ impl eframe::App for ModaApp {
             }
 
             if confirm {
-                let path = self.path_dialog.as_ref().unwrap().path.clone();
-                if PathBuf::from(&path).exists() && PathBuf::from(&path).is_dir() {
-                    self.create_game_and_switch(&game_id, PathBuf::from(&path));
-                    close = true;
-                } else {
-                    self.error = Some("Path does not exist or is not a directory".to_string());
+                if let Some(state) = self.path_dialog.take() {
+                    let path = PathBuf::from(&state.path);
+                    if path.exists() && path.is_dir() {
+                        match (state.creator)(&self.config, path) {
+                            Ok(active) => {
+                                self.active_game = Some(active);
+                                self.page = Page::ModManager;
+                                self.error = None;
+                            }
+                            Err(e) => {
+                                self.error = Some(format!("Failed to initialize game: {}", e));
+                            }
+                        }
+                    } else {
+                        self.error = Some("Path does not exist or is not a directory".to_string());
+                    }
                 }
+                close = true;
             }
 
             if close {
@@ -278,7 +253,6 @@ impl eframe::App for ModaApp {
             }
         }
 
-        // --- Directory browser modal ---
         if self.dir_browser.visible {
             self.dir_browser.show(ctx, &mut self.pending_select);
             if let Some(selected) = self.pending_select.take() {
@@ -288,7 +262,6 @@ impl eframe::App for ModaApp {
             }
         }
 
-        // --- Error display ---
         if let Some(ref err) = self.error.clone() {
             let mut dismiss = false;
             egui::Window::new("Error")

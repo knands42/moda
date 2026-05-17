@@ -1,7 +1,12 @@
+use std::path::PathBuf;
+
+use super::super::app::PathDialogState;
+use super::super::components::game_card;
 use super::super::style;
 use crate::config::Config;
+use crate::error::ModManagerError;
 use crate::games::{self, Game, MarvelRivals, StardewValley};
-use crate::mods::SyncManager;
+use crate::mods::{ModState, SyncManager};
 use crate::ui::active_game::ActiveGame;
 
 pub fn render(
@@ -39,94 +44,22 @@ pub fn render(
             let (rect, card_response) =
                 ui.allocate_exact_size(egui::vec2(card_width - 12.0, 200.0), egui::Sense::click());
 
+            let entry = get_game_info(id);
+
             if ui.is_rect_visible(rect) {
                 let is_hovered = card_response.hovered();
-                let bg = if is_hovered {
-                    style::CARD_HOVER
-                } else {
-                    style::CARD_BG
-                };
-
-                ui.painter().rect_filled(rect, 12.0, bg);
-                ui.painter().rect_stroke(
-                    rect,
-                    egui::CornerRadius::same(12),
-                    egui::Stroke::new(1.0, style::BORDER),
-                    egui::StrokeKind::Outside,
-                );
-
-                if is_hovered {
-                    ui.painter().rect_stroke(
-                        rect,
-                        egui::CornerRadius::same(12),
-                        egui::Stroke::new(1.5, style::ACCENT),
-                        egui::StrokeKind::Outside,
-                    );
-                }
-
-                let icon = icon_for_game(name);
-                ui.painter().text(
-                    egui::Pos2::new(rect.center().x, rect.top() + 40.0),
-                    egui::Align2::CENTER_CENTER,
-                    icon,
-                    egui::FontId::proportional(36.0),
-                    style::TEXT,
-                );
-
-                ui.painter().text(
-                    egui::Pos2::new(rect.center().x, rect.top() + 80.0),
-                    egui::Align2::CENTER_CENTER,
-                    *name,
-                    egui::FontId::proportional(18.0),
-                    style::TEXT,
-                );
-
-                ui.painter().text(
-                    egui::Pos2::new(rect.center().x, rect.top() + 140.0),
-                    egui::Align2::CENTER_CENTER,
-                    *description,
-                    egui::FontId::proportional(12.0),
-                    style::TEXT_MUTED,
-                );
+                let icon = entry.map(|e| e.icon).unwrap_or("\u{1F3AE}");
+                game_card::render(ui, rect, is_hovered, icon, name, description);
             }
 
             if card_response.clicked() {
-                let registry_id: &str = id;
-                if registry_id == "stardew_valley" {
-                    if let Some(path) = StardewValley::discover_path(config) {
-                        let game = StardewValley::new(path);
-                        let sm = SyncManager::new(game, config.clone());
-                        match sm.reconcile(&sm.game_mod_path()) {
-                            Ok(state) => {
-                                result = Some(ActiveGame::StardewValley(sm, state));
-                            }
-                            Err(e) => {
-                                *error = Some(format!("Reconcile failed: {}", e));
-                            }
+                if let Some(entry) = entry {
+                    match (entry.construct)(config) {
+                        Ok(active_game) => result = Some(active_game),
+                        Err(SelectionError::NeedsPath(state)) => *path_dialog = Some(state),
+                        Err(SelectionError::ReconcileFailed(err)) => {
+                            *error = Some(format!("Reconcile failed: {}", err));
                         }
-                    } else {
-                        *path_dialog = Some(super::super::app::PathDialogState {
-                            game_id: "stardew_valley".to_string(),
-                            path: String::new(),
-                        });
-                    }
-                } else if registry_id == "marvel_rivals" {
-                    if let Some(path) = MarvelRivals::discover_path(config) {
-                        let game = MarvelRivals::new(path);
-                        let sm = SyncManager::new(game, config.clone());
-                        match sm.reconcile(&sm.game_mod_path()) {
-                            Ok(state) => {
-                                result = Some(ActiveGame::MarvelRivals(sm, state));
-                            }
-                            Err(e) => {
-                                *error = Some(format!("Reconcile failed: {}", e));
-                            }
-                        }
-                    } else {
-                        *path_dialog = Some(super::super::app::PathDialogState {
-                            game_id: "marvel_rivals".to_string(),
-                            path: String::new(),
-                        });
                     }
                 }
             }
@@ -148,10 +81,56 @@ pub fn render(
     result
 }
 
-fn icon_for_game(name: &str) -> &str {
-    match name {
-        "Stardew Valley" => "\u{1F33E}",
-        "Marvel Rivals" => "\u{2694}\u{FE0F}",
-        _ => "\u{1F3AE}",
+#[derive(Copy, Clone)]
+struct GameEntry {
+    icon: &'static str,
+    construct: fn(&Config) -> Result<ActiveGame, SelectionError>,
+}
+
+fn get_game_info(registry_id: &str) -> Option<GameEntry> {
+    match registry_id {
+        "stardew_valley" => Some(GameEntry {
+            icon: "\u{1F33E}",
+            construct: |c| {
+                select_game::<StardewValley>(c, StardewValley::new, ActiveGame::StardewValley)
+            },
+        }),
+        "marvel_rivals" => Some(GameEntry {
+            icon: "\u{2694}\u{FE0F}",
+            construct: |c| {
+                select_game::<MarvelRivals>(c, MarvelRivals::new, ActiveGame::MarvelRivals)
+            },
+        }),
+        _ => None,
+    }
+}
+
+enum SelectionError {
+    NeedsPath(PathDialogState),
+    ReconcileFailed(ModManagerError),
+}
+
+fn select_game<G: Game + 'static>(
+    config: &Config,
+    construct: fn(PathBuf) -> G,
+    make_active: fn(SyncManager<G>, ModState) -> ActiveGame,
+) -> Result<ActiveGame, SelectionError> {
+    if let Some(path) = G::discover_path(config) {
+        let game = construct(path);
+        let sm = SyncManager::new(game, config.clone());
+        sm.reconcile(&sm.game_mod_path())
+            .map(|state| make_active(sm, state))
+            .map_err(SelectionError::ReconcileFailed)
+    } else {
+        Err(SelectionError::NeedsPath(PathDialogState {
+            game_name: G::name(),
+            path: String::new(),
+            creator: Box::new(move |config, path| {
+                let game = construct(path);
+                let sm = SyncManager::new(game, config.clone());
+                sm.reconcile(&sm.game_mod_path())
+                    .map(|state| make_active(sm, state))
+            }),
+        }))
     }
 }
