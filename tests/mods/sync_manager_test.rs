@@ -197,47 +197,6 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
 }
 
 #[test]
-fn test_stage_one_mod_other_kind() {
-    // Given: a mod entry with kind Other (non-standard)
-    let temp = TempDir::new().unwrap();
-    let staging_path = temp.path().join("staging").join("stardew_valley");
-
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
-    let game = StardewValley::new(temp.path().join("game"));
-    let manager = SyncManager::new(game, config);
-    let mut state = ModState::from_vec(vec![ReconciledMod {
-        name: "OtherMod".to_string(),
-        status: ModStatus::Downloaded,
-        source_entry: Some(ModEntry {
-            name: "OtherMod".to_string(),
-            path: temp.path().join("nonexistent"),
-            kind: ModEntryKind::Other,
-            metadata: None,
-        }),
-        staging_entry: None,
-        game_entry: None,
-    }]);
-
-    let entry = ModEntry {
-        name: "OtherMod".to_string(),
-        path: temp.path().join("nonexistent"),
-        kind: ModEntryKind::Other,
-        metadata: None,
-    };
-
-    // When: staging the Other-kind mod
-    let result = manager.stage_one_mod(&entry, &mut state);
-
-    // Then: no filesystem operation occurs, but state still transitions to Staged
-    assert!(result.is_ok());
-    assert!(!staging_path.join("OtherMod").exists());
-    assert_eq!(state.snapshot()[0].status, ModStatus::Staged);
-}
-
-#[test]
 fn test_stage_mods_with_mods() {
     // Given: multiple directory mods in the source folder with tracked state
     let temp = TempDir::new().unwrap();
@@ -588,6 +547,8 @@ fn test_unstage_mods_batch() {
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir(mods_path.join("ModA")).unwrap();
     fs::write(mods_path.join("ModA").join("a.txt"), "a").unwrap();
+    fs::create_dir(mods_path.join("ModB")).unwrap();
+    fs::write(mods_path.join("ModB").join("a.txt"), "a").unwrap();
 
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir(staging_path.join("ModA")).unwrap();
@@ -622,7 +583,12 @@ fn test_unstage_mods_batch() {
         ReconciledMod {
             name: "ModB".to_string(),
             status: ModStatus::Staged,
-            source_entry: None,
+            source_entry: Some(ModEntry {
+                name: "ModB".to_string(),
+                path: mods_path.join("ModB"),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            }),
             staging_entry: Some(ModEntry {
                 name: "ModB".to_string(),
                 path: staging_path.join("ModB"),

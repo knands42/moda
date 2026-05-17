@@ -13,6 +13,10 @@ pub struct SyncManager<G: Game> {
     mod_registry: ModRegistry<G>,
 }
 
+pub enum ResolveStatusAfterDisable { Staged, Downloaded, NotFound }
+
+pub enum ResolveStatusAfterUnstage { Downloaded, NotFound }
+
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
         let mod_registry = ModRegistry::new(config.clone());
@@ -82,27 +86,17 @@ impl<G: Game> SyncManager<G> {
         mod_entry: &ModEntry,
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
+        let _ = Enabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
+
         if mod_entry.path.exists() {
             Installer::uninstall_from_dir(&mod_entry.path)?;
         }
 
-        let _ = Enabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
-
-        match self.mod_registry.get_mod_by_name(&mod_entry.name) {
-            Ok(_) => {
-                if state.get_mod(&mod_entry.name).is_some() {
-                    state.set_downloaded(&mod_entry.name);
-                } else {
-                    state.remove(&mod_entry.name);
-                }
-                Ok(())
-            }
-            Err(ModManagerError::ModNotFound(_)) => {
-                state.remove(&mod_entry.name);
-                Ok(())
-            }
-            Err(e) => Err(e),
+        match self.resolve_status_after_unstage(&mod_entry.name)? {
+            ResolveStatusAfterUnstage::Downloaded => state.set_downloaded(&mod_entry.name),
+            ResolveStatusAfterUnstage::NotFound => state.remove(&mod_entry.name),
         }
+        Ok(())
     }
 
     pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
@@ -148,30 +142,12 @@ impl<G: Game> SyncManager<G> {
             Enabler::deactivate(&mod_entry.path)?;
         }
 
-        match self.mod_registry.get_staged_mod_by_name(&mod_entry.name) {
-            Ok(_) => {
-                state.set_staged(&mod_entry.name);
-                Ok(())
-            }
-            Err(ModManagerError::ModNotFound(_)) => {
-                match self.mod_registry.get_mod_by_name(&mod_entry.name) {
-                    Ok(_) => {
-                        if state.get_mod(&mod_entry.name).is_some() {
-                            state.set_downloaded(&mod_entry.name);
-                        } else {
-                            state.remove(&mod_entry.name);
-                        }
-                        Ok(())
-                    }
-                    Err(ModManagerError::ModNotFound(_)) => {
-                        state.remove(&mod_entry.name);
-                        Ok(())
-                    }
-                    Err(e) => Err(e),
-                }
-            }
-            Err(e) => Err(e),
+        match self.resolve_status_after_disable(&mod_entry.name)? {
+            ResolveStatusAfterDisable::Staged => state.set_staged(&mod_entry.name),
+            ResolveStatusAfterDisable::Downloaded => state.set_downloaded(&mod_entry.name),
+            ResolveStatusAfterDisable::NotFound => state.remove(&mod_entry.name),
         }
+        Ok(())
     }
 
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
@@ -194,5 +170,29 @@ impl<G: Game> SyncManager<G> {
 
     fn get_staging_path(&self) -> PathBuf {
         PathBuf::from(&self.config.staging_root_path).join(G::registry_id())
+    }
+
+    fn resolve_status_after_disable(
+        &self,
+        mod_name: &str,
+    ) -> Result<ResolveStatusAfterDisable, ModManagerError> {
+        if self.mod_registry.get_staged_mod_by_name(mod_name).is_ok() {
+            return Ok(ResolveStatusAfterDisable::Staged);
+        }
+        if self.mod_registry.get_mod_by_name(mod_name).is_ok() {
+            return Ok(ResolveStatusAfterDisable::Downloaded);
+        }
+        Ok(ResolveStatusAfterDisable::NotFound) // not found anywhere → remove
+    }
+
+    fn resolve_status_after_unstage(
+        &self,
+        mod_name: &str,
+    ) -> Result<ResolveStatusAfterUnstage, ModManagerError> {
+        if self.mod_registry.get_staged_mod_by_name(mod_name).is_ok() {
+            return Ok(ResolveStatusAfterUnstage::Downloaded)
+        }
+
+        Ok(ResolveStatusAfterUnstage::NotFound)
     }
 }

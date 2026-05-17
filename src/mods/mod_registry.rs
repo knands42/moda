@@ -9,9 +9,9 @@ use std::fs;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ModMetadata {}
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ModEntry {
     pub name: String,
     pub path: PathBuf,
@@ -27,7 +27,7 @@ pub enum ModStatus {
     Modified,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ReconciledMod {
     pub name: String,
     pub status: ModStatus,

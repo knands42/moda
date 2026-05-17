@@ -1,6 +1,8 @@
 - [x] Make the config file auto create the config file at the designed location and with default values (based on user $HOME)
+- [ ] Memoize zip wrap directory method?
+- [ ] Create background jobs to update the state periodically in batches
+- [ ] Track state on a sqlite
 - [ ] Add profile management
 - [ ] Support download of collection
 - [ ] Open Browser to download mods
-- [ ] Track state on a sqlite
 - [ ] Add Marvel Rivals support modding
