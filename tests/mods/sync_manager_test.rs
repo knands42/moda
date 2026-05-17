@@ -754,12 +754,7 @@ fn test_sync_all_multiple_statuses() {
         ReconciledMod {
             name: "ModC".to_string(),
             status: ModStatus::Enabled,
-            source_entry: Some(ModEntry {
-                name: "ModC".to_string(),
-                path: mods_path.join("ModC"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
+            source_entry: None,
             staging_entry: Some(ModEntry {
                 name: "ModC".to_string(),
                 path: staging_path.join("ModC"),
@@ -780,7 +775,11 @@ fn test_sync_all_multiple_statuses() {
 
     // Then: each mod advances exactly one status
     assert!(result.is_ok());
+    assert!(mods_path.join("ModA").exists());
     assert!(staging_path.join("ModA").join("a.txt").exists());
+    assert!(staging_path.join("ModB").join("b.txt").exists());
+    assert!(staging_path.join("ModC").join("c.txt").exists());
+    assert!(game_path.join("Mods").join("ModA").is_symlink());
     assert!(game_path.join("Mods").join("ModB").is_symlink());
     assert!(game_path.join("Mods").join("ModC").is_symlink());
 
@@ -792,7 +791,7 @@ fn test_sync_all_multiple_statuses() {
             .map(|m| (&*m.name, m.status))
             .collect::<Vec<_>>(),
         vec![
-            ("ModA", ModStatus::Staged),  // Downloaded -> Staged
+            ("ModA", ModStatus::Enabled), // Downloaded -> Enabled
             ("ModB", ModStatus::Enabled), // Staged -> Enabled
             ("ModC", ModStatus::Enabled), // Enabled -> no-op
         ]

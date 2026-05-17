@@ -179,21 +179,20 @@ impl<G: Game> SyncManager<G> {
     // TODO: Goes from Downloaded to Enabled
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Sync all started");
-        let reconciled = state.snapshot();
         let mut staged = 0;
         let mut enabled = 0;
-        for m in &reconciled {
-            match m.status {
-                ModStatus::Downloaded => {
-                    self.stage_one_mod(m.source_entry.as_ref().unwrap(), state)?;
-                    staged += 1;
-                }
-                ModStatus::Staged => {
-                    self.enable_one_mod(m.staging_entry.as_ref().unwrap(), state)?;
-                    enabled += 1;
-                }
-                ModStatus::Enabled => continue,
-                ModStatus::Modified => todo!(),
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Downloaded {
+                self.stage_one_mod(m.source_entry.as_ref().unwrap(), state)?;
+                staged += 1;
+            }
+        }
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Staged {
+                self.enable_one_mod(m.staging_entry.as_ref().unwrap(), state)?;
+                enabled += 1;
             }
         }
 
@@ -207,6 +206,8 @@ impl<G: Game> SyncManager<G> {
 }
 
 impl<G: Game> SyncManager<G> {
+    // TODO: Improve this, is using the reconciliation key to check whether a staging path exists or not rather than relying on the actual mod_registry path
+    // Suggestion, check if the source_path for staging/downloaded exists after getting it, instead of directly hitting the filesystem O(n) op time.
     fn resolve_after_disable(
         &self,
         mod_entry: &ModEntry,
@@ -233,11 +234,12 @@ impl<G: Game> SyncManager<G> {
 
     fn resolve_after_unstage(&self, mod_entry: &ModEntry, state: &mut ModState) {
         state.set_unstaged(&mod_entry.name);
-        if let Some(_) = state
+        if state
             .get_mod(&mod_entry.name)
             .and_then(|m| m.source_entry.clone())
+            .is_some()
         {
-            state.set_downloaded(&mod_entry);
+            state.set_downloaded(mod_entry);
         } else {
             state.remove(&mod_entry.name);
         }
