@@ -35,7 +35,7 @@ pub fn supported_games() -> Vec<(&'static str, &'static str, &'static str)> {
         (
             MarvelRivals::registry_id(),
             MarvelRivals::name(),
-            "Hero shooter by NetEase — moddable via custom assets",
+            "Hero shooter by NetEase — moddable via custom fonts",
         ),
     ]
 }

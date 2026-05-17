@@ -3,6 +3,14 @@
 ## Project Overview
 Mod manager for Linux built with Rust + egui. Starting with Stardew Valley, designed for multi-game extensibility.
 
+## Showcase
+
+**Main Page**
+<img src="./assets/main_page.png" alt="main page">
+**Mod Manager Page**
+<img src="./assets/mod_manager_page.png" alt="mod manager page">
+
+
 ## Developer Commands
 ```bash
 cargo run --bin moda                  # Run the app

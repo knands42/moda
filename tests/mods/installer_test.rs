@@ -118,7 +118,7 @@ fn test_zip_wrap_directory_single_wrapping_dir() {
         .start_file("SomeMod/mod.txt", SimpleFileOptions::default())
         .unwrap();
     zip_writer
-        .start_file("SomeMod/assets/other.txt", SimpleFileOptions::default())
+        .start_file("SomeMod/fonts/other.txt", SimpleFileOptions::default())
         .unwrap();
     zip_writer.finish().unwrap();
 
