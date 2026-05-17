@@ -1,7 +1,6 @@
 use crate::error::ModManagerError;
 use serde::Deserialize;
 
-#[allow(dead_code)]
 fn nexus_api_base() -> String {
     std::env::var("NEXUS_API_BASE").unwrap_or_else(|_| "https://api.nexusmods.com/v3".to_string())
 }

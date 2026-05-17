@@ -19,8 +19,21 @@ impl StardewValley {
             log::info!("Created Mods folder at {}", mods_path.display());
         }
 
+        let stardew_valley = Self {
+            game_path: game_path.clone(),
+        };
+        match stardew_valley.pre_setup() {
+            Ok(_) => {}
+            Err(e) => {
+                log::error!(
+                    "Failed to install SMAPI for stardew valley, require manual setup: {}",
+                    e
+                );
+            }
+        }
+
         log::info!("Stardew Valley initialized at {}", game_path.display());
-        Self { game_path }
+        stardew_valley
     }
 }
 
@@ -52,10 +65,12 @@ impl Game for StardewValley {
             Self::SMAPI_VERSION
         );
 
-        let url = format!(
-            "https://github.com/Pathoschild/SMAPI/releases/download/{v}/SMAPI-{v}-installer.zip",
-            v = Self::SMAPI_VERSION
-        );
+        let url = std::env::var("MODA_SMAPI_DOWNLOAD_URL").unwrap_or_else(|_| {
+            format!(
+                "https://github.com/Pathoschild/SMAPI/releases/download/{v}/SMAPI-{v}-installer.zip",
+                v = Self::SMAPI_VERSION
+            )
+        });
 
         let zip_data = reqwest::blocking::get(&url)
             .and_then(|r| r.bytes())

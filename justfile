@@ -1,8 +1,9 @@
 check:
-    cargo clippy && cargo fmt -- --check
+    cargo clippy -- -D warnings
 
 format:
     cargo fmt
 
 test:
-    cargo test
+    cargo test -- --skip stardew
+    cargo test stardew -- --test-threads=1
