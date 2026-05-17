@@ -1,23 +1,11 @@
-use moda::config::Config;
 use moda::games::StardewValley;
 use moda::mods::mod_registry::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
 use moda::mods::ModState;
 use moda::mods::SyncManager;
-use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
 use tempfile::TempDir;
-use zip::write::SimpleFileOptions;
-use zip::ZipWriter;
 
-fn make_config(mods_root: &str, staging_root: &str) -> Config {
-    Config {
-        nexus_api_key: String::new(),
-        mods_root_path: mods_root.to_string(),
-        staging_root_path: staging_root.to_string(),
-        game_search_paths: HashMap::new(),
-    }
-}
+use crate::mods::test_util::{create_zip, make_config};
 
 fn reconciled_mods_from_vec(mods: Vec<ReconciledMod>) -> ModState {
     let mods = mods.into_iter().map(|m| (m.name.clone(), m)).collect();
@@ -52,13 +40,7 @@ fn test_stage_one_mod_zip() {
     fs::create_dir_all(&mods_path).unwrap();
 
     let zip_path = mods_path.join("SomeMod.zip");
-    let zip_file = fs::File::create(&zip_path).unwrap();
-    let mut zip_writer = ZipWriter::new(zip_file);
-    zip_writer
-        .start_file("mod.txt", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer.write_all(b"content").unwrap();
-    zip_writer.finish().unwrap();
+    create_zip(&zip_path, &["mod.txt"]);
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
@@ -105,13 +87,7 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
     fs::create_dir_all(&mods_path).unwrap();
 
     let zip_path = mods_path.join("SomeMod.zip");
-    let zip_file = fs::File::create(&zip_path).unwrap();
-    let mut zip_writer = ZipWriter::new(zip_file);
-    zip_writer
-        .start_file("WrapDir/mod.txt", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer.write_all(b"content").unwrap();
-    zip_writer.finish().unwrap();
+    create_zip(&zip_path, &["WrapDir/mod.txt"]);
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),

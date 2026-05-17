@@ -1,32 +1,9 @@
-use moda::config::Config;
 use moda::games::StardewValley;
 use moda::mods::mod_registry::{ModEntryKind, ModRegistry, ModStatus};
-use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
-use std::path::Path;
 use tempfile::TempDir;
-use zip::write::SimpleFileOptions;
-use zip::ZipWriter;
 
-fn make_config(mods_root: &str, staging_root: &str) -> Config {
-    Config {
-        nexus_api_key: String::new(),
-        mods_root_path: mods_root.to_string(),
-        staging_root_path: staging_root.to_string(),
-        game_search_paths: HashMap::new(),
-    }
-}
-
-fn create_zip(path: &Path, entries: &[&str]) {
-    let f = fs::File::create(path).unwrap();
-    let mut w = ZipWriter::new(f);
-    for entry in entries {
-        w.start_file(entry, SimpleFileOptions::default()).unwrap();
-        w.write_all(b"content").unwrap();
-    }
-    w.finish().unwrap();
-}
+use crate::mods::test_util::{create_zip, make_config};
 
 #[test]
 fn test_reconcile_empty() {
@@ -88,16 +65,10 @@ fn test_reconcile_zip_variants() {
     fs::create_dir_all(&mods_path).unwrap();
 
     // Flat zip — files at root, effective name = strip_zip_ext
-    create_zip(
-        &mods_path.join("FlatMod.zip"),
-        &["mod.txt"],
-    );
+    create_zip(&mods_path.join("FlatMod.zip"), &["mod.txt"]);
 
     // Wrapped zip — single top-level dir, effective name = wrap dir
-    create_zip(
-        &mods_path.join("WrappedMod.zip"),
-        &["WrappedDir/mod.txt"],
-    );
+    create_zip(&mods_path.join("WrappedMod.zip"), &["WrappedDir/mod.txt"]);
 
     // Zip whose wrap dir differs from the filename
     create_zip(
@@ -131,20 +102,55 @@ fn test_reconcile_zip_variants() {
     let snapshot = result.snapshot();
 
     let flat = snapshot.iter().find(|m| m.name == "FlatMod").unwrap();
-    assert_eq!(flat.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
-    assert!(flat.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/FlatMod.zip"));
+    assert_eq!(
+        flat.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::ZipArchive
+    );
+    assert!(flat
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/FlatMod.zip"));
 
     let wrapped = snapshot.iter().find(|m| m.name == "WrappedDir").unwrap();
-    assert_eq!(wrapped.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
-    assert!(wrapped.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/WrappedMod.zip"));
+    assert_eq!(
+        wrapped.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::ZipArchive
+    );
+    assert!(wrapped
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/WrappedMod.zip"));
 
-    let diff = snapshot.iter().find(|m| m.name == "DifferentName-v2").unwrap();
-    assert_eq!(diff.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
-    assert!(diff.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/DiffName.zip"));
+    let diff = snapshot
+        .iter()
+        .find(|m| m.name == "DifferentName-v2")
+        .unwrap();
+    assert_eq!(
+        diff.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::ZipArchive
+    );
+    assert!(diff
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/DiffName.zip"));
 
     let mixed = snapshot.iter().find(|m| m.name == "Mixed-1.0.0").unwrap();
-    assert_eq!(mixed.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
-    assert!(mixed.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/Mixed-1.0.0.zip"));
+    assert_eq!(
+        mixed.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::ZipArchive
+    );
+    assert!(mixed
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/Mixed-1.0.0.zip"));
 }
 
 #[test]
@@ -179,27 +185,72 @@ fn test_reconcile_multiple_mixed_states() {
 
     let a = snapshot.iter().find(|m| m.name == "ModA").unwrap();
     assert_eq!(a.status, ModStatus::Downloaded);
-    assert_eq!(a.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(a.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModA"));
+    assert_eq!(
+        a.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(a
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/ModA"));
     assert!(a.staging_entry.is_none());
     assert!(a.game_entry.is_none());
 
     let b = snapshot.iter().find(|m| m.name == "ModB").unwrap();
     assert_eq!(b.status, ModStatus::Staged);
-    assert_eq!(b.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(b.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModB"));
-    assert_eq!(b.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(b.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModB"));
+    assert_eq!(
+        b.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(b
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/ModB"));
+    assert_eq!(
+        b.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(b
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/ModB"));
     assert!(b.game_entry.is_none());
 
     let c = snapshot.iter().find(|m| m.name == "ModC").unwrap();
     assert_eq!(c.status, ModStatus::Enabled);
-    assert_eq!(c.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(c.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModC"));
-    assert_eq!(c.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(c.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModC"));
+    assert_eq!(
+        c.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(c
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/ModC"));
+    assert_eq!(
+        c.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(c
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/ModC"));
     assert_eq!(c.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(c.game_entry.as_ref().unwrap().path.ends_with("game/Mods/ModC"));
+    assert!(c
+        .game_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("game/Mods/ModC"));
 }
 
 #[test]
@@ -224,11 +275,24 @@ fn test_reconcile_enabled_mod_without_staging() {
     let m = &result.snapshot()[0];
     assert_eq!(m.name, "SomeMod");
     assert_eq!(m.status, ModStatus::Enabled);
-    assert_eq!(m.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(m.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/SomeMod"));
+    assert_eq!(
+        m.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(m
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/SomeMod"));
     assert!(m.staging_entry.is_none());
     assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(m.game_entry.as_ref().unwrap().path.ends_with("game/Mods/SomeMod"));
+    assert!(m
+        .game_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("game/Mods/SomeMod"));
 }
 
 #[test]
@@ -255,7 +319,12 @@ fn test_reconcile_orphan_enabled() {
     assert!(m.source_entry.is_none());
     assert!(m.staging_entry.is_none());
     assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(m.game_entry.as_ref().unwrap().path.ends_with("game/Mods/SomeMod"));
+    assert!(m
+        .game_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("game/Mods/SomeMod"));
 }
 
 #[test]
@@ -279,8 +348,16 @@ fn test_reconcile_orphan_staged() {
     assert_eq!(m.name, "SomeMod");
     assert_eq!(m.status, ModStatus::Staged);
     assert!(m.source_entry.is_none());
-    assert_eq!(m.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(m.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/SomeMod"));
+    assert_eq!(
+        m.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(m
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/SomeMod"));
     assert!(m.game_entry.is_none());
 }
 
@@ -325,19 +402,56 @@ fn test_reconcile_modified() {
 
     let a = snapshot.iter().find(|m| m.name == "ModA").unwrap();
     assert_eq!(a.status, ModStatus::Modified);
-    assert_eq!(a.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(a.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModA"));
-    assert_eq!(a.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(a.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModA"));
+    assert_eq!(
+        a.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(a
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/ModA"));
+    assert_eq!(
+        a.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(a
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/ModA"));
     assert_eq!(a.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(a.game_entry.as_ref().unwrap().path.ends_with("game/Mods/ModA"));
+    assert!(a
+        .game_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("game/Mods/ModA"));
 
     let b = snapshot.iter().find(|m| m.name == "ModB").unwrap();
     assert_eq!(b.status, ModStatus::Modified);
-    assert_eq!(b.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(b.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModB"));
-    assert_eq!(b.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(b.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModB"));
+    assert_eq!(
+        b.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(b
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/ModB"));
+    assert_eq!(
+        b.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(b
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/ModB"));
     assert!(b.game_entry.is_none());
 }
 
@@ -364,8 +478,21 @@ fn test_reconcile_enabled_with_staging_only_no_source() {
     assert_eq!(m.name, "SomeMod");
     assert_eq!(m.status, ModStatus::Enabled);
     assert!(m.source_entry.is_none());
-    assert_eq!(m.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(m.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/SomeMod"));
+    assert_eq!(
+        m.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(m
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/SomeMod"));
     assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
-    assert!(m.game_entry.as_ref().unwrap().path.ends_with("game/Mods/SomeMod"));
+    assert!(m
+        .game_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("game/Mods/SomeMod"));
 }
