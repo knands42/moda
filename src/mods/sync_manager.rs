@@ -158,10 +158,16 @@ impl<G: Game> SyncManager<G> {
 
     pub fn disable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Disabling all enabled mods");
-        let game_mods_path = self.game.game_mod_path();
-        let game_mods = self.mod_registry.list_game_mods_folder(&game_mods_path)?;
-        for entry in game_mods {
-            self.disable_one_mod(&entry, state)?;
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Enabled {
+                if let Some(staged_mod) = m.game_entry.as_ref() {
+                    self.disable_one_mod(staged_mod, state)?
+                } else {
+                    log::warn!("Mod {} doesnt have a staging folder", m.name);
+                    // TODO: reconcile?
+                }
+            }
         }
 
         Ok(())

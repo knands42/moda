@@ -59,67 +59,6 @@ impl<G: Game> ModRegistry<G> {
 }
 
 impl<G: Game> ModRegistry<G> {
-    pub fn list_mods_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
-        let mods_root_path = self.get_mod_path();
-        let entries = self.list_folder(mods_root_path)?;
-        log::debug!("Found {} mods in source folder", entries.len());
-        Ok(entries)
-    }
-
-    pub fn get_mod_by_name(&self, name: &str) -> Result<ModEntry, ModManagerError> {
-        let mods_root_path = self.get_mod_path();
-        let entry = self.get_one_mod(mods_root_path, name)?;
-        log::debug!("Found mod by name: {name}");
-        Ok(entry)
-    }
-
-    pub fn list_staging_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
-        let mods_staging_path =
-            PathBuf::from(&self.config.staging_root_path).join(G::registry_id());
-        let entries = self.list_folder(mods_staging_path)?;
-        log::debug!("Found {} mods in staging folder", entries.len());
-        Ok(entries)
-    }
-
-    pub fn get_staged_mod_by_name(&self, name: &str) -> Result<ModEntry, ModManagerError> {
-        let staged_mods_path = self.get_staging_path();
-        let entry = self.get_one_mod(staged_mods_path, name)?;
-        log::debug!("Found staged mod by name: {name}");
-        Ok(entry)
-    }
-
-    pub fn list_game_mods_folder(
-        &self,
-        game_mod_path: &Path,
-    ) -> Result<Vec<ModEntry>, ModManagerError> {
-        let dir = match fs::read_dir(game_mod_path) {
-            Ok(dir) => dir,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-            Err(e) => return Err(ModManagerError::IoError(e)),
-        };
-
-        let mut entries = Vec::new();
-        for entry in dir {
-            let entry = entry?;
-            let ft = entry.file_type()?;
-            if !ft.is_symlink() {
-                continue;
-            }
-            let name = entry
-                .file_name()
-                .into_string()
-                .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
-            entries.push(ModEntry {
-                name,
-                path: entry.path(),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            });
-        }
-        log::debug!("Found {} enabled mods in game folder", entries.len());
-        Ok(entries)
-    }
-
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;
@@ -186,6 +125,53 @@ impl<G: Game> ModRegistry<G> {
         Ok(ModState::new(reconciled))
     }
 
+    fn list_game_mods_folder(
+        &self,
+        game_mod_path: &Path,
+    ) -> Result<Vec<ModEntry>, ModManagerError> {
+        let dir = match fs::read_dir(game_mod_path) {
+            Ok(dir) => dir,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(ModManagerError::IoError(e)),
+        };
+
+        let mut entries = Vec::new();
+        for entry in dir {
+            let entry = entry?;
+            let ft = entry.file_type()?;
+            if !ft.is_symlink() {
+                continue;
+            }
+            let name = entry
+                .file_name()
+                .into_string()
+                .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
+            entries.push(ModEntry {
+                name,
+                path: entry.path(),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            });
+        }
+        log::debug!("Found {} enabled mods in game folder", entries.len());
+        Ok(entries)
+    }
+
+    fn list_mods_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
+        let mods_root_path = PathBuf::from(&self.config.mods_root_path).join(G::registry_id());
+        let entries = self.list_folder(mods_root_path)?;
+        log::debug!("Found {} mods in source folder", entries.len());
+        Ok(entries)
+    }
+
+    fn list_staging_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
+        let mods_staging_path =
+            PathBuf::from(&self.config.staging_root_path).join(G::registry_id());
+        let entries = self.list_folder(mods_staging_path)?;
+        log::debug!("Found {} mods in staging folder", entries.len());
+        Ok(entries)
+    }
+
     fn list_folder(&self, source: PathBuf) -> Result<Vec<ModEntry>, ModManagerError> {
         let dir = match fs::read_dir(&source) {
             Ok(dir) => dir,
@@ -220,52 +206,6 @@ impl<G: Game> ModRegistry<G> {
         }
 
         Ok(entries)
-    }
-
-    fn get_one_mod(&self, source: PathBuf, name: &str) -> Result<ModEntry, ModManagerError> {
-        let dir = match fs::read_dir(&source) {
-            Ok(dir) => dir,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                return Err(ModManagerError::ModNotFound(name.to_string()))
-            }
-            Err(e) => return Err(ModManagerError::IoError(e)),
-        };
-
-        for entry in dir {
-            let entry = entry?;
-            let entry_name = entry
-                .file_name()
-                .into_string()
-                .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
-
-            if entry_name == name {
-                if entry.path().extension().is_some_and(|ext| ext == "zip") {
-                    return Ok(ModEntry {
-                        name: entry_name,
-                        path: entry.path(),
-                        kind: ModEntryKind::ZipArchive,
-                        metadata: None,
-                    });
-                } else if entry.file_type()?.is_dir() {
-                    return Ok(ModEntry {
-                        name: entry_name,
-                        path: entry.path(),
-                        kind: ModEntryKind::Directory,
-                        metadata: None,
-                    });
-                }
-            }
-        }
-
-        Err(ModManagerError::ModNotFound(name.to_string()))
-    }
-
-    fn get_mod_path(&self) -> PathBuf {
-        PathBuf::from(&self.config.mods_root_path).join(G::registry_id())
-    }
-
-    fn get_staging_path(&self) -> PathBuf {
-        PathBuf::from(&self.config.staging_root_path).join(G::registry_id())
     }
 }
 
