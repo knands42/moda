@@ -13,6 +13,7 @@ pub enum ModManagerError {
 
     IoError(io::Error),
     NexusApiError(String),
+    GameSetupFailed(String),
 }
 
 impl std::fmt::Display for ModManagerError {
@@ -37,6 +38,7 @@ impl std::fmt::Display for ModManagerError {
             ModManagerError::IoError(e) => write!(f, "IO error: {}", e),
             ModManagerError::InvalidMod(s) => write!(f, "Invalid mod: {}", s),
             ModManagerError::NexusApiError(s) => write!(f, "Nexus API error: {}", s),
+            ModManagerError::GameSetupFailed(s) => write!(f, "Game setup failed: {}", s),
         }
     }
 }
