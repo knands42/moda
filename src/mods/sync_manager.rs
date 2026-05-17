@@ -13,9 +13,16 @@ pub struct SyncManager<G: Game> {
     mod_registry: ModRegistry<G>,
 }
 
-pub enum ResolveStatusAfterDisable { Staged, Downloaded, NotFound }
+pub enum ResolveStatusAfterDisable {
+    Staged,
+    Downloaded,
+    NotFound,
+}
 
-pub enum ResolveStatusAfterUnstage { Downloaded, NotFound }
+pub enum ResolveStatusAfterUnstage {
+    Downloaded,
+    NotFound,
+}
 
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
@@ -66,7 +73,7 @@ impl<G: Game> SyncManager<G> {
                 Installer::install(&ModSource::LocalZip(mod_entry.path.clone()), &target)?;
                 state.set_staged(&staging_name);
             }
-            _ => {},
+            _ => {}
         }
 
         Ok(())
@@ -150,6 +157,8 @@ impl<G: Game> SyncManager<G> {
         Ok(())
     }
 
+    // TODO: Make it handle Modified
+    // TODO: Goes from Downloaded to Enabled
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         let reconciled = state.snapshot();
         for m in &reconciled {
@@ -189,8 +198,8 @@ impl<G: Game> SyncManager<G> {
         &self,
         mod_name: &str,
     ) -> Result<ResolveStatusAfterUnstage, ModManagerError> {
-        if self.mod_registry.get_staged_mod_by_name(mod_name).is_ok() {
-            return Ok(ResolveStatusAfterUnstage::Downloaded)
+        if self.mod_registry.get_mod_by_name(mod_name).is_ok() {
+            return Ok(ResolveStatusAfterUnstage::Downloaded);
         }
 
         Ok(ResolveStatusAfterUnstage::NotFound)

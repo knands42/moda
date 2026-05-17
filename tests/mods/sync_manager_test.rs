@@ -539,28 +539,39 @@ fn test_unstage_one_mod_nonexistent_path() {
 
 #[test]
 fn test_unstage_mods_batch() {
-    // Given: two staged mods — one with a source entry, one without
+    // Given: three mods — one staged with source, one staged without source,
+    //        one enabled with source and staging
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
+    let game_path = temp.path().join("game");
 
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir(mods_path.join("ModA")).unwrap();
     fs::write(mods_path.join("ModA").join("a.txt"), "a").unwrap();
-    fs::create_dir(mods_path.join("ModB")).unwrap();
-    fs::write(mods_path.join("ModB").join("a.txt"), "a").unwrap();
+    fs::create_dir(mods_path.join("ModC")).unwrap();
+    fs::write(mods_path.join("ModC").join("c.txt"), "c").unwrap();
 
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir(staging_path.join("ModA")).unwrap();
     fs::write(staging_path.join("ModA").join("a.txt"), "a").unwrap();
     fs::create_dir(staging_path.join("ModB")).unwrap();
     fs::write(staging_path.join("ModB").join("b.txt"), "b").unwrap();
+    fs::create_dir(staging_path.join("ModC")).unwrap();
+    fs::write(staging_path.join("ModC").join("c.txt"), "c").unwrap();
+
+    fs::create_dir_all(game_path.join("Mods")).unwrap();
+    std::os::unix::fs::symlink(
+        staging_path.join("ModC"),
+        game_path.join("Mods").join("ModC"),
+    )
+    .unwrap();
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = StardewValley::new(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = ModState::from_vec(vec![
         ReconciledMod {
@@ -583,12 +594,7 @@ fn test_unstage_mods_batch() {
         ReconciledMod {
             name: "ModB".to_string(),
             status: ModStatus::Staged,
-            source_entry: Some(ModEntry {
-                name: "ModB".to_string(),
-                path: mods_path.join("ModB"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
+            source_entry: None,
             staging_entry: Some(ModEntry {
                 name: "ModB".to_string(),
                 path: staging_path.join("ModB"),
@@ -597,19 +603,49 @@ fn test_unstage_mods_batch() {
             }),
             game_entry: None,
         },
+        ReconciledMod {
+            name: "ModC".to_string(),
+            status: ModStatus::Enabled,
+            source_entry: Some(ModEntry {
+                name: "ModC".to_string(),
+                path: mods_path.join("ModC"),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            }),
+            staging_entry: Some(ModEntry {
+                name: "ModC".to_string(),
+                path: staging_path.join("ModC"),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            }),
+            game_entry: Some(ModEntry {
+                name: "ModC".to_string(),
+                path: game_path.join("Mods").join("ModC"),
+                kind: ModEntryKind::Directory,
+                metadata: None,
+            }),
+        },
     ]);
 
     // When: batch-unstaging all mods
     let result = manager.unstage_mods(&mut state);
 
-    // Then: ModA reverts to Downloaded, ModB is removed entirely
+    // Then: ModA reverts to Downloaded, ModB is removed entirely,
+    //       ModC's symlink is removed and reverts to Downloaded
     assert!(result.is_ok());
     assert!(!staging_path.join("ModA").exists());
     assert!(!staging_path.join("ModB").exists());
+    assert!(!staging_path.join("ModC").exists());
+    assert!(!game_path.join("Mods").join("ModC").exists());
     assert!(mods_path.join("ModA").exists());
-    assert_eq!(state.snapshot().len(), 1);
-    assert_eq!(state.snapshot()[0].name, "ModA");
-    assert_eq!(state.snapshot()[0].status, ModStatus::Downloaded);
+    assert!(mods_path.join("ModC").exists());
+    let mut snapshot = state.snapshot();
+    snapshot.sort_by(|a, b| a.name.cmp(&b.name));
+    assert_eq!(snapshot.len(), 2);
+    assert_eq!(snapshot[0].name, "ModA");
+    assert_eq!(snapshot[0].status, ModStatus::Downloaded);
+    assert_eq!(snapshot[1].name, "ModC");
+    assert_eq!(snapshot[1].status, ModStatus::Downloaded);
 }
 
 #[test]
@@ -808,7 +844,7 @@ fn test_disable_one_mod_nonexistent_game_mod() {
 }
 
 #[test]
-fn test_disable_mods_with_mods() {
+fn test_disable_mods_batch() {
     // Given: multiple enabled mods with symlinks in the game mods folder
     let temp = TempDir::new().unwrap();
     let staging_path = temp.path().join("staging").join("stardew_valley");
