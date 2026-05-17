@@ -14,6 +14,7 @@ pub struct SyncManager<G: Game> {
 }
 
 // TODO: split into multiple impl blocks
+
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
         let mod_registry = ModRegistry::new(config.clone());
@@ -24,15 +25,9 @@ impl<G: Game> SyncManager<G> {
             mod_registry,
         }
     }
+}
 
-    pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
-        log::info!("Reconciling mod state from {}", game_mod_path.display());
-        let state = self.mod_registry.reconcile(game_mod_path)?;
-        let count = state.snapshot().len();
-        log::info!("Reconcile complete: {} mods found", count);
-        Ok(state)
-    }
-
+impl<G: Game> SyncManager<G> {
     // TODO: what to do with new updated mods, will it always disabled first, stage and then re-enabled?
     pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Staging all mods");
@@ -112,7 +107,9 @@ impl<G: Game> SyncManager<G> {
         self.resolve_after_unstage(mod_entry, state);
         Ok(())
     }
+}
 
+impl<G: Game> SyncManager<G> {
     pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Enabling all staged mods");
         let staging_path = self.mod_registry.list_staging_folder()?;
@@ -167,6 +164,16 @@ impl<G: Game> SyncManager<G> {
         self.resolve_after_disable(mod_entry, state)?;
         Ok(())
     }
+}
+
+impl<G: Game> SyncManager<G> {
+    pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
+        log::info!("Reconciling mod state from {}", game_mod_path.display());
+        let state = self.mod_registry.reconcile(game_mod_path)?;
+        let count = state.snapshot().len();
+        log::info!("Reconcile complete: {} mods found", count);
+        Ok(state)
+    }
 
     // TODO: Make it handle Modified
     // TODO: Goes from Downloaded to Enabled
@@ -197,7 +204,9 @@ impl<G: Game> SyncManager<G> {
     fn get_staging_path(&self) -> PathBuf {
         PathBuf::from(&self.config.staging_root_path).join(G::registry_id())
     }
+}
 
+impl<G: Game> SyncManager<G> {
     fn resolve_after_disable(
         &self,
         mod_entry: &ModEntry,
