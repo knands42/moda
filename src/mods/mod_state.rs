@@ -60,6 +60,7 @@ impl ModState {
         if let Some(m) = self.mods.get_mut(base) {
             m.staging_entry = None;
             m.game_entry = None;
+            m.status = ModStatus::Downloaded;
         }
     }
 
@@ -67,6 +68,7 @@ impl ModState {
         let base = name.strip_suffix(".zip").unwrap_or(name);
         if let Some(m) = self.mods.get_mut(base) {
             m.game_entry = None;
+            m.status = ModStatus::Staged;
         }
     }
 

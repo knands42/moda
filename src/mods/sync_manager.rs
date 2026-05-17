@@ -212,17 +212,18 @@ impl<G: Game> SyncManager<G> {
         mod_entry: &ModEntry,
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
-        state.set_disabled(&mod_entry.name);
-        if self
-            .mod_registry
-            .get_staged_mod_by_name(&mod_entry.name)
-            .is_ok()
+        if state
+            .get_mod(&mod_entry.name)
+            .and_then(|m| m.staging_entry.clone())
+            .is_some()
         {
-            let staging = self.mod_registry.get_staged_mod_by_name(&mod_entry.name)?;
-            state.set_staged(&staging);
-        } else if self.mod_registry.get_mod_by_name(&mod_entry.name).is_ok() {
-            let src = self.mod_registry.get_mod_by_name(&mod_entry.name)?;
-            state.set_downloaded(&src);
+            state.set_disabled(&mod_entry.name);
+        } else if state
+            .get_mod(&mod_entry.name)
+            .and_then(|m| m.source_entry.clone())
+            .is_some()
+        {
+            state.set_unstaged(&mod_entry.name);
         } else {
             state.remove(&mod_entry.name);
         }
@@ -232,8 +233,11 @@ impl<G: Game> SyncManager<G> {
 
     fn resolve_after_unstage(&self, mod_entry: &ModEntry, state: &mut ModState) {
         state.set_unstaged(&mod_entry.name);
-        if let Ok(src) = self.mod_registry.get_mod_by_name(&mod_entry.name) {
-            state.set_downloaded(&src);
+        if let Some(_) = state
+            .get_mod(&mod_entry.name)
+            .and_then(|m| m.source_entry.clone())
+        {
+            state.set_downloaded(&mod_entry);
         } else {
             state.remove(&mod_entry.name);
         }
