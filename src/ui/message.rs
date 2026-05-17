@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
+    GameSelect,
     Mods,
     Downloads,
 }
@@ -7,6 +8,7 @@ pub enum Tab {
 #[derive(Debug, Clone)]
 pub enum Message {
     TabSelected(Tab),
+    SelectGame(String),
     Reconcile,
     SyncAll,
     StageMod(String),

@@ -7,7 +7,7 @@ use crate::error::ModManagerError;
 use std::path::PathBuf;
 
 pub trait Game {
-    fn name(&self) -> &str;
+    fn name() -> &'static str;
     fn game_path(&self) -> PathBuf;
     fn game_mod_path(&self) -> PathBuf;
     fn pre_setup(&self) -> Result<(), ModManagerError>;
@@ -20,4 +20,12 @@ pub trait Game {
             .cloned()
     }
     fn registry_id() -> &'static str;
+}
+
+pub fn supported_games() -> Vec<(&'static str, &'static str, &'static str)> {
+    vec![(
+        StardewValley::registry_id(),
+        StardewValley::name(),
+        "Farming simulator with deep modding support via SMAPI",
+    )]
 }

@@ -1,9 +1,8 @@
-use iced::widget::{button, container, row, text, toggler, Space};
-use iced::{Alignment, Element, Length, Theme};
-
 use crate::mods::catalog::{ModStatus, ReconciledMod};
 use crate::ui::message::Message;
 use crate::ui::styles;
+use iced::widget::{button, container, row, text, toggler, Space};
+use iced::{Alignment, Element, Length, Theme};
 
 pub fn download_row(m: &ReconciledMod) -> Element<'_, Message> {
     let stage_btn = button(text("Stage").size(13))

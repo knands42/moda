@@ -141,3 +141,17 @@ pub fn badge_downloaded(theme: &Theme) -> container::Style {
         ..container::Style::default()
     }
 }
+
+pub fn game_card(theme: &Theme, _status: button::Status) -> button::Style {
+    let p = theme.extended_palette();
+    button::Style {
+        background: Some(Background::Color(p.background.weak.color)),
+        text_color: p.background.weak.text,
+        border: Border {
+            color: p.background.strong.color,
+            width: 1.0,
+            radius: 10.0.into(),
+        },
+        ..button::Style::default()
+    }
+}

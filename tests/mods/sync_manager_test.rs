@@ -1,11 +1,9 @@
+use crate::mods::test_util::{create_zip, make_config};
 use moda::games::StardewValley;
 use moda::mods::catalog::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
-use moda::mods::ModState;
-use moda::mods::SyncManager;
+use moda::mods::{ModState, SyncManager};
 use std::fs;
 use tempfile::TempDir;
-
-use crate::mods::test_util::{create_zip, make_config};
 
 fn reconciled_mods_from_vec(mods: Vec<ReconciledMod>) -> ModState {
     let mods = mods.into_iter().map(|m| (m.name.clone(), m)).collect();

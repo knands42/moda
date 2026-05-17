@@ -5,9 +5,7 @@ use std::path::PathBuf;
 #[test]
 fn test_new_creates_instance() {
     // Given: a game path
-    let sv = StardewValley::new(PathBuf::from("/games/stardew"));
-    // When: the name is queried
-    let name = sv.name();
+    let name = StardewValley::name();
     // Then: it returns the expected name
     assert_eq!(name, "Stardew Valley");
 }

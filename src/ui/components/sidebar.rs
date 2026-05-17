@@ -8,44 +8,44 @@ use crate::ui::styles;
 const SIDEBAR_WIDTH: u16 = 220;
 
 pub fn view(app: &App) -> Element<'_, Message> {
-    let title = text("Moda").size(28);
-    let subtitle = text(app.game_name.as_str())
-        .size(13)
-        .style(|theme: &Theme| iced::widget::text::Style {
-            color: Some(theme.extended_palette().background.base.text),
-        });
+    let mut items: Vec<Element<'_, Message>> = vec![text("Moda").size(28).into()];
 
-    let nav = column![
-        tab_button("Mods", Tab::Mods, app.current_tab),
-        tab_button("Downloads", Tab::Downloads, app.current_tab),
-    ]
-    .spacing(4);
+    if app.current_tab != Tab::GameSelect {
+        let subtitle = text(app.game_name.as_str())
+            .size(13)
+            .style(|theme: &Theme| iced::widget::text::Style {
+                color: Some(theme.extended_palette().background.base.text),
+            });
+        items.push(subtitle.into());
+        items.push(Space::with_height(24).into());
 
-    let actions = column![
-        button(text("Reconcile").size(14))
-            .width(Length::Fill)
-            .padding([8, 12])
-            .style(iced::widget::button::secondary)
-            .on_press(Message::Reconcile),
-        button(text("Sync All").size(14))
-            .width(Length::Fill)
-            .padding([8, 12])
-            .style(iced::widget::button::primary)
-            .on_press(Message::SyncAll),
-    ]
-    .spacing(8);
+        let nav = column![
+            tab_button("Mods", Tab::Mods, app.current_tab),
+            tab_button("Downloads", Tab::Downloads, app.current_tab),
+        ]
+        .spacing(4);
+        items.push(nav.into());
+        items.push(Space::with_height(Length::Fill).into());
 
-    let content = column![
-        title,
-        subtitle,
-        Space::with_height(24),
-        nav,
-        Space::with_height(Length::Fill),
-        actions,
-    ]
-    .spacing(6)
-    .padding(20)
-    .width(SIDEBAR_WIDTH);
+        let actions = column![
+            button(text("Reconcile").size(14))
+                .width(Length::Fill)
+                .padding([8, 12])
+                .style(iced::widget::button::secondary)
+                .on_press(Message::Reconcile),
+            button(text("Sync All").size(14))
+                .width(Length::Fill)
+                .padding([8, 12])
+                .style(iced::widget::button::primary)
+                .on_press(Message::SyncAll),
+        ]
+        .spacing(8);
+        items.push(actions.into());
+    } else {
+        items.push(Space::with_height(Length::Fill).into());
+    }
+
+    let content = column(items).spacing(6).padding(20).width(SIDEBAR_WIDTH);
 
     container(content)
         .width(SIDEBAR_WIDTH)

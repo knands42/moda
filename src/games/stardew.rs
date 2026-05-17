@@ -22,7 +22,7 @@ impl StardewValley {
 }
 
 impl Game for StardewValley {
-    fn name(&self) -> &str {
+    fn name() -> &'static str {
         "Stardew Valley"
     }
 
@@ -34,12 +34,11 @@ impl Game for StardewValley {
         self.game_path.join("Mods")
     }
 
-    fn registry_id() -> &'static str {
-        "stardew_valley"
+    fn pre_setup(&self) -> Result<(), ModManagerError> {
+        todo!()
     }
 
-    fn pre_setup(&self) -> Result<(), ModManagerError> {
-        // install SMAPI
-        todo!()
+    fn registry_id() -> &'static str {
+        "stardew_valley"
     }
 }

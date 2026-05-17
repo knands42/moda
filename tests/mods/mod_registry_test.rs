@@ -1,5 +1,5 @@
 use moda::games::StardewValley;
-use moda::mods::catalog::{ModEntryKind, Catalog, ModStatus};
+use moda::mods::catalog::{Catalog, ModEntryKind, ModStatus};
 use std::fs;
 use tempfile::TempDir;
 
