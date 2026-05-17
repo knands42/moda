@@ -6,7 +6,7 @@ use iced::widget::{column, container, scrollable, text};
 use iced::{Element, Length};
 
 pub fn view(app: &App) -> Element<'_, Message> {
-    let mut mods: Vec<_> = app
+    let mods: Vec<_> = app
         .mod_state
         .get_mods()
         .filter(|m| {
@@ -16,7 +16,6 @@ pub fn view(app: &App) -> Element<'_, Message> {
             )
         })
         .collect();
-    mods.sort_by(|a, b| a.name.cmp(&b.name));
 
     let enabled_count = mods
         .iter()

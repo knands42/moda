@@ -8,5 +8,6 @@ fn main() -> iced::Result {
 
     iced::application("Moda", update, view)
         .theme(|_| iced::Theme::CatppuccinMocha)
+        .font(include_bytes!("../assets/NotoEmoji-Regular.ttf"))
         .run()
 }

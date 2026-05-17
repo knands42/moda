@@ -1,5 +1,5 @@
-use iced::widget::{button, column, container, text, Space};
-use iced::{Element, Length, Theme};
+use iced::widget::{button, column, container, row, text, Space};
+use iced::{font::Family, Element, Font, Length, Theme};
 
 use crate::ui::app::App;
 use crate::ui::message::{Message, Tab};
@@ -17,7 +17,19 @@ pub fn view(app: &App) -> Element<'_, Message> {
                 color: Some(theme.extended_palette().background.base.text),
             });
         items.push(subtitle.into());
-        items.push(Space::with_height(24).into());
+        items.push(Space::with_height(8).into());
+
+        let emoji = text("🔙").size(14).font(Font {
+            family: Family::Name("Noto Emoji"),
+            ..Default::default()
+        });
+        let back = button(row![emoji, text(" Change Game").size(14)].spacing(0))
+            .width(Length::Fill)
+            .padding([6, 10])
+            .style(iced::widget::button::text)
+            .on_press(Message::TabSelected(Tab::GameSelect));
+        items.push(back.into());
+        items.push(Space::with_height(16).into());
 
         let nav = column![
             tab_button("Mods", Tab::Mods, app.current_tab),
