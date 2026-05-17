@@ -227,6 +227,16 @@ impl<G: Game> SyncManager<G> {
 }
 
 impl<G: Game> SyncManager<G> {
+    pub fn game_mod_path(&self) -> PathBuf {
+        self.game.game_mod_path()
+    }
+
+    pub fn game_path(&self) -> PathBuf {
+        self.game.game_path()
+    }
+}
+
+impl<G: Game> SyncManager<G> {
     fn resolve_after_disable(
         &self,
         mod_entry: &ModEntry,

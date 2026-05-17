@@ -12,7 +12,11 @@ pub struct Config {
 
 impl Config {
     pub fn load_config() -> Option<Config> {
-        let path = dirs::config_dir()?.join("moda").join("config.toml");
+        let user_home = std::env::var("HOME").ok()?;
+        let path = PathBuf::from(user_home)
+            .join(".config")
+            .join("moda")
+            .join("config.toml");
 
         if !path.exists() {
             log::warn!("Config not found at {}, creating default", path.display());
@@ -28,21 +32,13 @@ impl Config {
 
     fn create_default(path: &std::path::Path) -> Option<()> {
         let user_home = std::env::var("HOME").ok()?;
-        let default_mods = PathBuf::from(&user_home).join("Mods");
-        let default_staging = PathBuf::from(&user_home).join("Mods").join(".staging");
 
         std::fs::create_dir_all(path.parent()?).ok()?;
 
-        let content = format!(
-            r#"nexus_api_key = ""
-mods_root_path = "{}"
-staging_root_path = "{}"
-"#,
-            default_mods.to_string_lossy(),
-            default_staging.to_string_lossy(),
-        );
+        let template = include_str!("../config.toml");
+        let content = template.replace("$HOME", &user_home);
 
-        std::fs::write(path, content).ok()?;
+        std::fs::write(path, content.as_bytes()).ok()?;
 
         log::info!("Default config created at {}", path.display());
         Some(())

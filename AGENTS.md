@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Overview
-Mod manager for Linux built with Rust + Iced. Starting with Stardew Valley, designed for multi-game extensibility.
+Mod manager for Linux built with Rust + egui. Starting with Stardew Valley, designed for multi-game extensibility.
 
 ## Developer Commands
 ```bash
@@ -26,11 +26,11 @@ cargo fmt -- --check                 # Check formatting
 moda/
 ├── Cargo.toml
 ├── src/
-│   ├── main.rs              # Iced app entrypoint
+│   ├── main.rs              # eframe entrypoint
 │   ├── lib.rs               # Re-exports public modules
 │   ├── config.rs            # Config loading from ~/.config/moda/config.toml
 │   ├── error.rs             # Error handling
-│   ├── ui.rs                # Iced UI (Application trait)
+│   ├── ui/                  # egui UI (app, pages, widgets)
 │   ├── games/
 │   │   ├── mod.rs           # Game trait definition
 │   │   └── stardew.rs       # Stardew Valley implementation
@@ -72,7 +72,7 @@ moda/
 
 ## Important Constraints
 - **Rust learning project**: Focus on architecture guidance + test skeletons, not full implementations
-- **Iced UI**: State management via `iced::Application` or `Sandbox`
+- **egui UI**: State management via `eframe::App` with modular pages under `src/ui/`
 - **Nexus API**: Requires API key; store in `~/.config/moda/config.toml`
 - **Collections**: Two formats planned — native JSON format + Nexus collections import
 

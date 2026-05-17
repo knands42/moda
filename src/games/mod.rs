@@ -1,5 +1,7 @@
+mod marvel_rivals;
 mod stardew;
 
+pub use marvel_rivals::MarvelRivals;
 pub use stardew::StardewValley;
 
 use crate::config::Config;
@@ -24,9 +26,16 @@ pub trait Game {
 }
 
 pub fn supported_games() -> Vec<(&'static str, &'static str, &'static str)> {
-    vec![(
-        StardewValley::registry_id(),
-        StardewValley::name(),
-        "Farming simulator with deep modding support via SMAPI",
-    )]
+    vec![
+        (
+            StardewValley::registry_id(),
+            StardewValley::name(),
+            "Farming simulator with deep modding support via SMAPI",
+        ),
+        (
+            MarvelRivals::registry_id(),
+            MarvelRivals::name(),
+            "Hero shooter by NetEase — moddable via custom assets",
+        ),
+    ]
 }
