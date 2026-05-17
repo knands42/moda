@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub trait Game {
     fn name() -> &'static str;
     fn game_path(&self) -> PathBuf;
+    fn set_game_path(&mut self, game_path: PathBuf);
     fn game_mod_path(&self) -> PathBuf;
     fn pre_setup(&self) -> Result<(), ModManagerError>;
     fn discover_path(config: &Config) -> Option<PathBuf> {

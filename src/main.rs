@@ -1,13 +1,6 @@
-use moda::ui::{update, view};
-
-fn main() -> iced::Result {
+fn main() {
     env_logger::init();
     log_panics::init();
 
     log::info!("Starting Moda");
-
-    iced::application("Moda", update, view)
-        .theme(|_| iced::Theme::CatppuccinMocha)
-        .font(include_bytes!("../assets/NotoEmoji-Regular.ttf"))
-        .run()
 }

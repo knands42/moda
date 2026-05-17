@@ -30,6 +30,10 @@ impl Game for StardewValley {
         self.game_path.clone()
     }
 
+    fn set_game_path(&mut self, game_path: PathBuf) {
+        self.game_path = game_path;
+    }
+
     fn game_mod_path(&self) -> PathBuf {
         self.game_path.join("Mods")
     }
