@@ -1,6 +1,7 @@
 - [x] Make the config file auto create the config file at the designed location and with default values (based on user $HOME)
 - [ ] Memoize zip wrap directory method?
 - [ ] Create background jobs to update the state periodically in batches
+- [ ] Use iNotify to listen manual changes in directories and reflect the changes on the state
 - [ ] Track state on a sqlite
 - [ ] Add profile management
 - [ ] Support download of collection

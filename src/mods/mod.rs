@@ -1,7 +1,7 @@
 pub mod downloader;
 mod enabler;
 mod installer;
-pub mod mod_registry;
+pub mod catalog;
 mod mod_state;
 mod sync_manager;
 

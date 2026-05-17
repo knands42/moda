@@ -1,5 +1,5 @@
 use moda::games::StardewValley;
-use moda::mods::mod_registry::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
+use moda::mods::catalog::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
 use moda::mods::ModState;
 use moda::mods::SyncManager;
 use std::fs;

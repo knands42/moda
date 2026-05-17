@@ -51,6 +51,38 @@ moda/
     └── profiles/
 ```
 
+## Flow
+
+### Component Interaction
+```mermaid
+flowchart LR
+    UI[Iced UI] --> SM[SyncManager]
+    SM --> CT[Catalog]
+    SM --> IN[Installer]
+    SM --> EN[Enabler]
+    SM --> MS[ModState]
+    CT --> FS[File System]
+    IN --> FS
+    EN --> FS
+    CFG[Config] --> SM
+    CT --> MS
+    
+    GAME[Game Trait] --> SM
+    StardewValley[Stardew Valley] --> GAME
+    MarvelRivals[Marvel Rivals] --> GAME
+```
+
+### Mod Lifecycle
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> Downloaded
+    Downloaded --> Staged : stage
+    Staged --> Enabled : enable (symlink)
+    Enabled --> Staged : disable
+    Staged --> Downloaded : unstage
+```
+
 ## Important Constraints
 - **Rust learning project**: My first rust project :)
 - **Iced UI**: State management via `iced::Application`

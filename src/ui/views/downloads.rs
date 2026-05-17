@@ -1,7 +1,7 @@
 use iced::widget::{column, container, scrollable, text};
 use iced::{Element, Length};
 
-use crate::mods::mod_registry::ModStatus;
+use crate::mods::catalog::ModStatus;
 use crate::ui::app::App;
 use crate::ui::components::mod_row;
 use crate::ui::message::Message;

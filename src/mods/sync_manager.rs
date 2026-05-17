@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
 use crate::mods::installer::strip_zip_ext;
-use crate::mods::mod_registry::{ModEntry, ModEntryKind, ModRegistry, ModStatus};
+use crate::mods::catalog::{ModEntry, ModEntryKind, Catalog, ModStatus};
 use crate::mods::mod_state::ModState;
 use crate::mods::{Enabler, Installer, ModSource};
 use std::path::{Path, PathBuf};
@@ -10,12 +10,12 @@ use std::path::{Path, PathBuf};
 pub struct SyncManager<G: Game> {
     game: G,
     config: Config,
-    mod_registry: ModRegistry<G>,
+    mod_registry: Catalog<G>,
 }
 
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
-        let mod_registry = ModRegistry::new(config.clone());
+        let mod_registry = Catalog::new(config.clone());
         log::debug!("SyncManager created for game: {}", game.name());
         Self {
             game,

@@ -43,12 +43,12 @@ pub enum ModEntryKind {
     Other,
 }
 
-pub struct ModRegistry<G: Game> {
+pub struct Catalog<G: Game> {
     config: Config,
     _game: PhantomData<G>,
 }
 
-impl<G: Game> ModRegistry<G> {
+impl<G: Game> Catalog<G> {
     pub fn new(config: Config) -> Self {
         log::debug!("ModRegistry created for game: {}", G::registry_id());
         Self {
@@ -58,7 +58,7 @@ impl<G: Game> ModRegistry<G> {
     }
 }
 
-impl<G: Game> ModRegistry<G> {
+impl<G: Game> Catalog<G> {
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;

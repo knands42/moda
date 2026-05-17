@@ -1,7 +1,7 @@
 use iced::widget::{button, container, row, text, toggler, Space};
 use iced::{Alignment, Element, Length, Theme};
 
-use crate::mods::mod_registry::{ModStatus, ReconciledMod};
+use crate::mods::catalog::{ModStatus, ReconciledMod};
 use crate::ui::message::Message;
 use crate::ui::styles;
 

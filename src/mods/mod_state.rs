@@ -1,4 +1,4 @@
-use crate::mods::mod_registry::{ModEntry, ModStatus, ReconciledMod};
+use crate::mods::catalog::{ModEntry, ModStatus, ReconciledMod};
 use std::collections::HashMap;
 
 #[derive(Clone, Default)]
