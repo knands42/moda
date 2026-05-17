@@ -4,6 +4,7 @@ use moda::mods::mod_registry::{ModEntryKind, ModRegistry, ModStatus};
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 use tempfile::TempDir;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
@@ -17,9 +18,18 @@ fn make_config(mods_root: &str, staging_root: &str) -> Config {
     }
 }
 
+fn create_zip(path: &Path, entries: &[&str]) {
+    let f = fs::File::create(path).unwrap();
+    let mut w = ZipWriter::new(f);
+    for entry in entries {
+        w.start_file(entry, SimpleFileOptions::default()).unwrap();
+        w.write_all(b"content").unwrap();
+    }
+    w.finish().unwrap();
+}
+
 #[test]
 fn test_reconcile_empty() {
-    // Given: no mods in any folder (source, staging, or game)
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let config = make_config(
@@ -28,16 +38,13 @@ fn test_reconcile_empty() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the reconciled state is empty
     assert!(result.snapshot().is_empty());
 }
 
 #[test]
 fn test_reconcile_enabled_failed_if_not_symlink_mod() {
-    // Given: a mod in source and staging, and a real directory (not a symlink) in game mods
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let mods_path = temp.path().join("mods").join("stardew_valley");
@@ -55,34 +62,54 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the mod is Staged (real dir is not a symlink, so not detected as enabled)
     assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Staged);
-    assert!(result.snapshot()[0].source_entry.is_some());
-    assert!(result.snapshot()[0].staging_entry.is_some());
-    assert!(result.snapshot()[0].game_entry.is_none());
+    let m = &result.snapshot()[0];
+    assert_eq!(m.name, "SomeMod");
+    assert_eq!(m.status, ModStatus::Staged);
+
+    let src = m.source_entry.as_ref().unwrap();
+    assert_eq!(src.kind, ModEntryKind::Directory);
+    assert!(src.path.ends_with("mods/stardew_valley/SomeMod"));
+
+    let stg = m.staging_entry.as_ref().unwrap();
+    assert_eq!(stg.kind, ModEntryKind::Directory);
+    assert!(stg.path.ends_with("staging/stardew_valley/SomeMod"));
+
+    assert!(m.game_entry.is_none());
 }
 
 #[test]
-fn test_reconcile_zip_mod() {
-    // Given: a zip archive in the source folder (no staging or game entry)
+fn test_reconcile_zip_variants() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let mods_path = temp.path().join("mods").join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
 
-    let zip_path = mods_path.join("SomeMod.zip");
-    let zip_file = fs::File::create(&zip_path).unwrap();
-    let mut zip_writer = ZipWriter::new(zip_file);
-    zip_writer
-        .start_file("mod.txt", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer.write_all(b"content").unwrap();
-    zip_writer.finish().unwrap();
+    // Flat zip — files at root, effective name = strip_zip_ext
+    create_zip(
+        &mods_path.join("FlatMod.zip"),
+        &["mod.txt"],
+    );
+
+    // Wrapped zip — single top-level dir, effective name = wrap dir
+    create_zip(
+        &mods_path.join("WrappedMod.zip"),
+        &["WrappedDir/mod.txt"],
+    );
+
+    // Zip whose wrap dir differs from the filename
+    create_zip(
+        &mods_path.join("DiffName.zip"),
+        &["DifferentName-v2/mod.txt", "DifferentName-v2/sub/asset.dat"],
+    );
+
+    // Mixed zip — wrapping dir + files at root, no single wrap → strip_zip_ext
+    create_zip(
+        &mods_path.join("Mixed-1.0.0.zip"),
+        &["Mixed/mod.txt", "readme.md"],
+    );
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
@@ -90,132 +117,38 @@ fn test_reconcile_zip_mod() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the mod is Downloaded with a zip source entry
-    assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
-    assert!(result.snapshot()[0].source_entry.is_some());
-    assert_eq!(
-        result.snapshot()[0].source_entry.as_ref().unwrap().kind,
-        ModEntryKind::ZipArchive
-    );
-}
+    assert_eq!(result.snapshot().len(), 4);
 
-#[test]
-fn test_reconcile_wrapped_zip_matches_staging() {
-    // Given: a zip that wraps in a directory matching the staging entry name
-    let temp = TempDir::new().unwrap();
-    let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
-    fs::create_dir_all(&mods_path).unwrap();
-    fs::create_dir_all(&staging_path).unwrap();
+    for m in result.snapshot() {
+        assert_eq!(m.status, ModStatus::Downloaded);
+        assert!(m.source_entry.is_some());
+        assert!(m.staging_entry.is_none());
+        assert!(m.game_entry.is_none());
+    }
 
-    let zip_path = mods_path.join("SomeMod.zip");
-    let zip_file = fs::File::create(&zip_path).unwrap();
-    let mut zip_writer = ZipWriter::new(zip_file);
-    zip_writer
-        .start_file("SomeMod/mod.txt", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer.finish().unwrap();
+    let snapshot = result.snapshot();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
-    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
+    let flat = snapshot.iter().find(|m| m.name == "FlatMod").unwrap();
+    assert_eq!(flat.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
+    assert!(flat.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/FlatMod.zip"));
 
-    // When: reconciling (zip wraps SomeMod, effective name matches, but no staging dir yet)
-    let result = registry.reconcile(&game_path).unwrap();
+    let wrapped = snapshot.iter().find(|m| m.name == "WrappedDir").unwrap();
+    assert_eq!(wrapped.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
+    assert!(wrapped.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/WrappedMod.zip"));
 
-    // Then: the mod appears as Downloaded with effective name matching the wrap dir
-    assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
-}
+    let diff = snapshot.iter().find(|m| m.name == "DifferentName-v2").unwrap();
+    assert_eq!(diff.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
+    assert!(diff.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/DiffName.zip"));
 
-#[test]
-fn test_reconcile_wrapped_zip_different_name() {
-    // Given: a zip named "Mod.zip" that wraps as "SomeMod-v2/"
-    let temp = TempDir::new().unwrap();
-    let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
-    fs::create_dir_all(&mods_path).unwrap();
-    fs::create_dir_all(&staging_path).unwrap();
-
-    let zip_path = mods_path.join("Mod.zip");
-    let zip_file = fs::File::create(&zip_path).unwrap();
-    let mut zip_writer = ZipWriter::new(zip_file);
-    zip_writer
-        .start_file("SomeMod-v2/mod.txt", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer
-        .start_file("SomeMod-v2/sub/asset.dat", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer.finish().unwrap();
-
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
-    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
-
-    // When: reconciling (effective name is the wrap dir, not the zip name)
-    let result = registry.reconcile(&game_path).unwrap();
-
-    // Then: the effective name is the wrapping directory name
-    assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod-v2");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
-    assert_eq!(
-        result.snapshot()[0].source_entry.as_ref().unwrap().name,
-        "Mod.zip"
-    );
-}
-
-#[test]
-fn test_reconcile_zip_with_dir_and_root_files() {
-    // Given: a zip with both a wrapping dir and a file at root (mixed structure)
-    let temp = TempDir::new().unwrap();
-    let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
-    fs::create_dir_all(&mods_path).unwrap();
-    fs::create_dir_all(&staging_path).unwrap();
-
-    let zip_path = mods_path.join("SomeMod-1.0.0.zip");
-    let zip_file = fs::File::create(&zip_path).unwrap();
-    let mut zip_writer = ZipWriter::new(zip_file);
-    zip_writer
-        .start_file("SomeMod/mod.txt", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer
-        .start_file("readme.md", SimpleFileOptions::default())
-        .unwrap();
-    zip_writer.finish().unwrap();
-
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
-    let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
-
-    // When: reconciling (no single wrap dir due to mixed root)
-    let result = registry.reconcile(&game_path).unwrap();
-
-    // Then: fallback to strip_zip_ext for the effective name
-    assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod-1.0.0");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Downloaded);
+    let mixed = snapshot.iter().find(|m| m.name == "Mixed-1.0.0").unwrap();
+    assert_eq!(mixed.source_entry.as_ref().unwrap().kind, ModEntryKind::ZipArchive);
+    assert!(mixed.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/Mixed-1.0.0.zip"));
 }
 
 #[test]
 fn test_reconcile_multiple_mixed_states() {
-    // Given: three mods — one Downloaded, one Staged, one Enabled
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let mods_path = temp.path().join("mods").join("stardew_valley");
@@ -239,28 +172,38 @@ fn test_reconcile_multiple_mixed_states() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
-
-    // Then: each mod has the correct status
-    assert_eq!(result.snapshot().len(), 3);
-
     let snapshot = result.snapshot();
-    let mod_a = snapshot.iter().find(|m| m.name == "ModA").unwrap();
-    assert_eq!(mod_a.status, ModStatus::Downloaded);
 
-    let snapshot = result.snapshot();
-    let mod_b = snapshot.iter().find(|m| m.name == "ModB").unwrap();
-    assert_eq!(mod_b.status, ModStatus::Staged);
+    assert_eq!(snapshot.len(), 3);
 
-    let snapshot = result.snapshot();
-    let mod_c = snapshot.iter().find(|m| m.name == "ModC").unwrap();
-    assert_eq!(mod_c.status, ModStatus::Enabled);
+    let a = snapshot.iter().find(|m| m.name == "ModA").unwrap();
+    assert_eq!(a.status, ModStatus::Downloaded);
+    assert_eq!(a.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(a.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModA"));
+    assert!(a.staging_entry.is_none());
+    assert!(a.game_entry.is_none());
+
+    let b = snapshot.iter().find(|m| m.name == "ModB").unwrap();
+    assert_eq!(b.status, ModStatus::Staged);
+    assert_eq!(b.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(b.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModB"));
+    assert_eq!(b.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(b.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModB"));
+    assert!(b.game_entry.is_none());
+
+    let c = snapshot.iter().find(|m| m.name == "ModC").unwrap();
+    assert_eq!(c.status, ModStatus::Enabled);
+    assert_eq!(c.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(c.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModC"));
+    assert_eq!(c.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(c.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModC"));
+    assert_eq!(c.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(c.game_entry.as_ref().unwrap().path.ends_with("game/Mods/ModC"));
 }
 
 #[test]
 fn test_reconcile_enabled_mod_without_staging() {
-    // Given: a mod with a source entry and a game symlink, but no staging entry
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let mods_path = temp.path().join("mods").join("stardew_valley");
@@ -275,21 +218,21 @@ fn test_reconcile_enabled_mod_without_staging() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the mod is Enabled (source + game, no staging)
     assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Enabled);
-    assert!(result.snapshot()[0].source_entry.is_some());
-    assert!(result.snapshot()[0].staging_entry.is_none());
-    assert!(result.snapshot()[0].game_entry.is_some());
+    let m = &result.snapshot()[0];
+    assert_eq!(m.name, "SomeMod");
+    assert_eq!(m.status, ModStatus::Enabled);
+    assert_eq!(m.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/SomeMod"));
+    assert!(m.staging_entry.is_none());
+    assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m.game_entry.as_ref().unwrap().path.ends_with("game/Mods/SomeMod"));
 }
 
 #[test]
 fn test_reconcile_orphan_enabled() {
-    // Given: a symlink in the game mods folder with no corresponding source or staging
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let orphan_target = temp.path().join("orphan_target");
@@ -303,21 +246,20 @@ fn test_reconcile_orphan_enabled() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the orphan symlink is still detected as Enabled with only a game entry
     assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Enabled);
-    assert!(result.snapshot()[0].source_entry.is_none());
-    assert!(result.snapshot()[0].staging_entry.is_none());
-    assert!(result.snapshot()[0].game_entry.is_some());
+    let m = &result.snapshot()[0];
+    assert_eq!(m.name, "SomeMod");
+    assert_eq!(m.status, ModStatus::Enabled);
+    assert!(m.source_entry.is_none());
+    assert!(m.staging_entry.is_none());
+    assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m.game_entry.as_ref().unwrap().path.ends_with("game/Mods/SomeMod"));
 }
 
 #[test]
 fn test_reconcile_orphan_staged() {
-    // Given: a staging entry with no corresponding source or game entry
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -330,38 +272,45 @@ fn test_reconcile_orphan_staged() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the orphan staging entry is detected as Staged
     assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Staged);
-    assert!(result.snapshot()[0].source_entry.is_none());
-    assert!(result.snapshot()[0].staging_entry.is_some());
-    assert!(result.snapshot()[0].game_entry.is_none());
+    let m = &result.snapshot()[0];
+    assert_eq!(m.name, "SomeMod");
+    assert_eq!(m.status, ModStatus::Staged);
+    assert!(m.source_entry.is_none());
+    assert_eq!(m.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/SomeMod"));
+    assert!(m.game_entry.is_none());
 }
 
 #[test]
-fn test_reconcile_modified_with_enabled() {
-    // Given: a staged mod with a newer source AND an active game symlink
+fn test_reconcile_modified() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");
     fs::create_dir_all(&game_path).unwrap();
-
     fs::create_dir_all(&staging_path).unwrap();
-    fs::create_dir(staging_path.join("SomeMod")).unwrap();
-    fs::write(staging_path.join("SomeMod").join("file.txt"), "stale").unwrap();
+
+    // ModA: source newer than staging + game symlink (was enabled)
+    fs::create_dir(staging_path.join("ModA")).unwrap();
 
     std::thread::sleep(std::time::Duration::from_millis(10));
 
     fs::create_dir_all(&mods_path).unwrap();
-    fs::create_dir(mods_path.join("SomeMod")).unwrap();
-    fs::write(mods_path.join("SomeMod").join("file.txt"), "newer").unwrap();
+    fs::create_dir(mods_path.join("ModA")).unwrap();
 
-    std::os::unix::fs::symlink(staging_path.join("SomeMod"), game_path.join("SomeMod")).unwrap();
+    std::os::unix::fs::symlink(staging_path.join("ModA"), game_path.join("ModA")).unwrap();
+
+    // ModB: source newer than staging, no game entry (was only staged)
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    fs::create_dir(staging_path.join("ModB")).unwrap();
+
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    fs::create_dir(mods_path.join("ModB")).unwrap();
 
     let config = make_config(
         temp.path().join("mods").to_str().unwrap(),
@@ -369,21 +318,31 @@ fn test_reconcile_modified_with_enabled() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
+    let snapshot = result.snapshot();
 
-    // Then: the mod is Modified (newer source takes priority over enabled status)
-    assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Modified);
-    assert!(result.snapshot()[0].source_entry.is_some());
-    assert!(result.snapshot()[0].staging_entry.is_some());
-    assert!(result.snapshot()[0].game_entry.is_some());
+    assert_eq!(snapshot.len(), 2);
+
+    let a = snapshot.iter().find(|m| m.name == "ModA").unwrap();
+    assert_eq!(a.status, ModStatus::Modified);
+    assert_eq!(a.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(a.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModA"));
+    assert_eq!(a.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(a.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModA"));
+    assert_eq!(a.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(a.game_entry.as_ref().unwrap().path.ends_with("game/Mods/ModA"));
+
+    let b = snapshot.iter().find(|m| m.name == "ModB").unwrap();
+    assert_eq!(b.status, ModStatus::Modified);
+    assert_eq!(b.source_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(b.source_entry.as_ref().unwrap().path.ends_with("mods/stardew_valley/ModB"));
+    assert_eq!(b.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(b.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/ModB"));
+    assert!(b.game_entry.is_none());
 }
 
 #[test]
 fn test_reconcile_enabled_with_staging_only_no_source() {
-    // Given: a mod only in staging and game (source was removed)
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
     let staging_path = temp.path().join("staging").join("stardew_valley");
@@ -398,14 +357,15 @@ fn test_reconcile_enabled_with_staging_only_no_source() {
     );
     let registry: ModRegistry<StardewValley> = ModRegistry::new(config);
 
-    // When: reconciling all folders
     let result = registry.reconcile(&game_path).unwrap();
 
-    // Then: the mod is still Enabled (staging + game, no source needed)
     assert_eq!(result.snapshot().len(), 1);
-    assert_eq!(result.snapshot()[0].name, "SomeMod");
-    assert_eq!(result.snapshot()[0].status, ModStatus::Enabled);
-    assert!(result.snapshot()[0].source_entry.is_none());
-    assert!(result.snapshot()[0].staging_entry.is_some());
-    assert!(result.snapshot()[0].game_entry.is_some());
+    let m = &result.snapshot()[0];
+    assert_eq!(m.name, "SomeMod");
+    assert_eq!(m.status, ModStatus::Enabled);
+    assert!(m.source_entry.is_none());
+    assert_eq!(m.staging_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m.staging_entry.as_ref().unwrap().path.ends_with("staging/stardew_valley/SomeMod"));
+    assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m.game_entry.as_ref().unwrap().path.ends_with("game/Mods/SomeMod"));
 }
