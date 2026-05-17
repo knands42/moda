@@ -1,7 +1,8 @@
 - [x] Make the config file auto create the config file at the designed location and with default values (based on user $HOME)
-- [ ] pop up a dialog for user to manually provide default game path if not found
-- [ ] Reconcile at the start when the game is selected
-- [ ] auto setup the selected game (e.g., stardew valley needs to configure smapi)
+- [x] pop up a dialog for user to manually provide default game path if not found
+- [x] Reconcile at the start when the game is selected
+- [x] auto setup the selected game (e.g., stardew valley needs to configure smapi)
+- [ ] allow users to reconcile when they feel the need to
 - [ ] Memoize zip wrap directory method?
 - [ ] Create background jobs to update the state periodically in batches
 - [ ] Use iNotify to listen manual changes in directories and reflect the changes on the state
