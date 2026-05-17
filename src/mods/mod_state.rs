@@ -10,12 +10,6 @@ impl ModState {
     pub fn new(mods: HashMap<String, ReconciledMod>) -> Self {
         Self { mods }
     }
-
-    pub fn from_vec(mods: Vec<ReconciledMod>) -> Self {
-        Self {
-            mods: mods.into_iter().map(|m| (m.name.clone(), m)).collect(),
-        }
-    }
 }
 
 impl ModState {
@@ -81,6 +75,7 @@ impl ModState {
         self.mods.values()
     }
 
+    // TODO: Precalculate snapshot based on events
     pub fn snapshot(&self) -> Vec<ReconciledMod> {
         let mut mods: Vec<_> = self.mods.values().cloned().collect();
         mods.sort_by(|a, b| a.name.cmp(&b.name));

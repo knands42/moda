@@ -13,8 +13,6 @@ pub struct SyncManager<G: Game> {
     mod_registry: ModRegistry<G>,
 }
 
-// TODO: split into multiple impl blocks
-
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
         let mod_registry = ModRegistry::new(config.clone());
@@ -28,13 +26,17 @@ impl<G: Game> SyncManager<G> {
 }
 
 impl<G: Game> SyncManager<G> {
-    // TODO: what to do with new updated mods, will it always disabled first, stage and then re-enabled?
     pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Staging all mods");
-        let mods_folder = self.mod_registry.list_mods_folder()?;
-
-        for entry in mods_folder {
-            self.stage_one_mod(&entry, state)?;
+        for m in state.snapshot() {
+            if m.status == ModStatus::Downloaded {
+                if let Some(downloaded_mod) = m.source_entry.as_ref() {
+                    self.stage_one_mod(downloaded_mod, state)?
+                } else {
+                    log::warn!("Mod {} doesnt have a source folder", m.name);
+                    // TODO: reconcile?
+                }
+            }
         }
 
         Ok(())
@@ -84,9 +86,16 @@ impl<G: Game> SyncManager<G> {
 
     pub fn unstage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Unstaging all mods");
-        let staging_path = self.mod_registry.list_staging_folder()?;
-        for entry in staging_path {
-            self.unstage_one_mod(&entry, state)?;
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Staged || m.status == ModStatus::Enabled {
+                if let Some(staged_mod) = m.staging_entry.as_ref() {
+                    self.unstage_one_mod(staged_mod, state)?
+                } else {
+                    log::warn!("Mod {} doesnt have a staging folder", m.name);
+                    // TODO: reconcile?
+                }
+            }
         }
 
         Ok(())
@@ -112,9 +121,16 @@ impl<G: Game> SyncManager<G> {
 impl<G: Game> SyncManager<G> {
     pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Enabling all staged mods");
-        let staging_path = self.mod_registry.list_staging_folder()?;
-        for entry in staging_path {
-            self.enable_one_mod(&entry, state)?;
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Staged {
+                if let Some(staged_mod) = m.staging_entry.as_ref() {
+                    self.enable_one_mod(staged_mod, state)?
+                } else {
+                    log::warn!("Mod {} doesnt have a staging folder", m.name);
+                    // TODO: reconcile?
+                }
+            }
         }
 
         Ok(())
@@ -176,7 +192,6 @@ impl<G: Game> SyncManager<G> {
     }
 
     // TODO: Make it handle Modified
-    // TODO: Goes from Downloaded to Enabled
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Sync all started");
         let mut staged = 0;
@@ -206,23 +221,25 @@ impl<G: Game> SyncManager<G> {
 }
 
 impl<G: Game> SyncManager<G> {
-    // TODO: Improve this, is using the reconciliation key to check whether a staging path exists or not rather than relying on the actual mod_registry path
-    // Suggestion, check if the source_path for staging/downloaded exists after getting it, instead of directly hitting the filesystem O(n) op time.
     fn resolve_after_disable(
         &self,
         mod_entry: &ModEntry,
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
-        if state
-            .get_mod(&mod_entry.name)
-            .and_then(|m| m.staging_entry.clone())
-            .is_some()
+        let Some(reconciled) = state.get_mod(&mod_entry.name) else {
+            return Ok(());
+        };
+
+        if reconciled
+            .staging_entry
+            .as_ref()
+            .is_some_and(|e| e.path.exists())
         {
             state.set_disabled(&mod_entry.name);
-        } else if state
-            .get_mod(&mod_entry.name)
-            .and_then(|m| m.source_entry.clone())
-            .is_some()
+        } else if reconciled
+            .source_entry
+            .as_ref()
+            .is_some_and(|e| e.path.exists())
         {
             state.set_unstaged(&mod_entry.name);
         } else {
