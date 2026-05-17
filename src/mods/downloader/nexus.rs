@@ -26,6 +26,10 @@ pub struct NexusModInfo {
 
 impl NexusClient {
     pub fn new(api_key: String) -> Self {
+        log::debug!(
+            "NexusClient created (api_key present: {})",
+            !api_key.is_empty()
+        );
         Self {
             api_key,
             client: reqwest::blocking::Client::new(),
@@ -37,6 +41,7 @@ impl NexusClient {
         _game_domain: &str,
         _query: &str,
     ) -> Result<Vec<NexusModInfo>, ModManagerError> {
+        log::warn!("Nexus search not yet implemented");
         Err(ModManagerError::NexusApiError(
             "Search not yet implemented".into(),
         ))
@@ -49,17 +54,26 @@ impl NexusClient {
     ) -> Result<NexusModInfo, ModManagerError> {
         let url = format!("{}/games/{game_domain}/mods/{mod_id}", nexus_api_base());
 
+        log::debug!("Fetching mod info: {game_domain}/{mod_id}");
         let response = self
             .client
             .get(&url)
             .header("apikey", &self.api_key)
             .send()
-            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
+            .map_err(|e| {
+                log::error!("Nexus API request failed: {e}");
+                ModManagerError::NexusApiError(e.to_string())
+            })?;
 
-        let wrapper: NexusApiResponse<NexusModInfo> = response
-            .json()
-            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
+        let wrapper: NexusApiResponse<NexusModInfo> = response.json().map_err(|e| {
+            log::error!("Failed to parse Nexus API response: {e}");
+            ModManagerError::NexusApiError(e.to_string())
+        })?;
 
+        log::info!(
+            "Fetched mod info for {game_domain}/{mod_id}: {:?}",
+            wrapper.data.name
+        );
         Ok(wrapper.data)
     }
 
@@ -74,11 +88,15 @@ impl NexusClient {
             nexus_api_base()
         );
 
+        log::info!("Downloading mod {game_domain}/{mod_id} file {file_id}");
         self.client
             .get(&url)
             .header("apikey", &self.api_key)
             .send()
-            .map_err(|e| ModManagerError::NexusApiError(e.to_string()))?;
+            .map_err(|e| {
+                log::error!("Nexus download failed: {e}");
+                ModManagerError::NexusApiError(e.to_string())
+            })?;
 
         todo!()
     }

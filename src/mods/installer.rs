@@ -47,26 +47,50 @@ impl Installer {
             }
         }
 
-        if top_names.len() == 1 && has_subdir {
-            Ok(Some(top_names[0].clone()))
+        let result = if top_names.len() == 1 && has_subdir {
+            Some(top_names[0].clone())
         } else {
-            Ok(None)
-        }
+            None
+        };
+
+        log::debug!("Zip wrap analysis for {}: {:?}", zip_path.display(), result);
+        Ok(result)
     }
 
     pub fn install(source: &ModSource, target: &Path) -> Result<(), ModManagerError> {
         match source {
-            ModSource::LocalZip(file_path) => Self::install_from_zip(file_path, target),
-            ModSource::LocalDir(file_path) => Self::install_from_dir(file_path, target),
+            ModSource::LocalZip(file_path) => {
+                log::info!(
+                    "Installing zip {} -> {}",
+                    file_path.display(),
+                    target.display()
+                );
+                Self::install_from_zip(file_path, target)
+            }
+            ModSource::LocalDir(file_path) => {
+                log::info!(
+                    "Installing dir {} -> {}",
+                    file_path.display(),
+                    target.display()
+                );
+                Self::install_from_dir(file_path, target)
+            }
         }?;
 
+        log::info!("Install complete: {} entries", count_entries(target));
         Ok(())
     }
 
     pub fn uninstall_from_dir(file_path: &Path) -> Result<(), ModManagerError> {
         match std::fs::remove_dir_all(file_path) {
-            Ok(_) => Ok(()),
-            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+            Ok(_) => {
+                log::info!("Uninstalled {}", file_path.display());
+                Ok(())
+            }
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                log::warn!("Uninstall target not found: {}", file_path.display());
+                Ok(())
+            }
             Err(e) => Err(ModManagerError::IoError(e)),
         }
     }
@@ -132,5 +156,15 @@ impl Installer {
         }
 
         Ok(())
+    }
+}
+
+fn count_entries(path: &Path) -> usize {
+    if path.is_dir() {
+        std::fs::read_dir(path)
+            .map(|d| d.flatten().count())
+            .unwrap_or(0)
+    } else {
+        1
     }
 }

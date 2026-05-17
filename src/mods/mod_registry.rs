@@ -50,6 +50,7 @@ pub struct ModRegistry<G: Game> {
 
 impl<G: Game> ModRegistry<G> {
     pub fn new(config: Config) -> Self {
+        log::debug!("ModRegistry created for game: {}", G::registry_id());
         Self {
             config,
             _game: PhantomData,
@@ -60,23 +61,31 @@ impl<G: Game> ModRegistry<G> {
 impl<G: Game> ModRegistry<G> {
     pub fn list_mods_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
         let mods_root_path = self.get_mod_path();
-        self.list_folder(mods_root_path)
+        let entries = self.list_folder(mods_root_path)?;
+        log::debug!("Found {} mods in source folder", entries.len());
+        Ok(entries)
     }
 
     pub fn get_mod_by_name(&self, name: &str) -> Result<ModEntry, ModManagerError> {
         let mods_root_path = self.get_mod_path();
-        self.get_one_mod(mods_root_path, name)
+        let entry = self.get_one_mod(mods_root_path, name)?;
+        log::debug!("Found mod by name: {name}");
+        Ok(entry)
     }
 
     pub fn list_staging_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
         let mods_staging_path =
             PathBuf::from(&self.config.staging_root_path).join(G::registry_id());
-        self.list_folder(mods_staging_path)
+        let entries = self.list_folder(mods_staging_path)?;
+        log::debug!("Found {} mods in staging folder", entries.len());
+        Ok(entries)
     }
 
     pub fn get_staged_mod_by_name(&self, name: &str) -> Result<ModEntry, ModManagerError> {
         let staged_mods_path = self.get_staging_path();
-        self.get_one_mod(staged_mods_path, name)
+        let entry = self.get_one_mod(staged_mods_path, name)?;
+        log::debug!("Found staged mod by name: {name}");
+        Ok(entry)
     }
 
     pub fn list_game_mods_folder(
@@ -107,10 +116,12 @@ impl<G: Game> ModRegistry<G> {
                 metadata: None,
             });
         }
+        log::debug!("Found {} enabled mods in game folder", entries.len());
         Ok(entries)
     }
 
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
+        log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;
         let staged_mods = self.list_staging_folder()?;
         let enabled_mods = self.list_game_mods_folder(game_mod_path)?;

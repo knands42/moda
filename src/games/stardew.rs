@@ -13,8 +13,10 @@ impl StardewValley {
 
         if !mods_path.exists() {
             fs::create_dir_all(&mods_path).ok();
+            log::info!("Created Mods folder at {}", mods_path.display());
         }
 
+        log::info!("Stardew Valley initialized at {}", game_path.display());
         Self { game_path }
     }
 }

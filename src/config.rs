@@ -15,12 +15,14 @@ impl Config {
         let path = dirs::config_dir()?.join("moda").join("config.toml");
 
         if !path.exists() {
+            log::warn!("Config not found at {}, creating default", path.display());
             Self::create_default(&path)?;
         }
 
         let text = std::fs::read_to_string(&path).ok()?;
         let config: Config = toml::from_str(&text).ok()?;
 
+        log::info!("Config loaded from {}", path.display());
         Some(config)
     }
 
@@ -41,6 +43,8 @@ staging_root_path = "{}"
         );
 
         std::fs::write(path, content).ok()?;
+
+        log::info!("Default config created at {}", path.display());
         Some(())
     }
 }

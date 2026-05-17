@@ -27,6 +27,7 @@ pub enum ResolveStatusAfterUnstage {
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
         let mod_registry = ModRegistry::new(config.clone());
+        log::debug!("SyncManager created for game: {}", game.name());
         Self {
             game,
             config,
@@ -35,11 +36,16 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
-        self.mod_registry.reconcile(game_mod_path)
+        log::info!("Reconciling mod state from {}", game_mod_path.display());
+        let state = self.mod_registry.reconcile(game_mod_path)?;
+        let count = state.snapshot().len();
+        log::info!("Reconcile complete: {} mods found", count);
+        Ok(state)
     }
 
     // TODO: what to do with new updated mods, will it always disabled first, stage and then re-enabled?
     pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Staging all mods");
         let mods_folder = self.mod_registry.list_mods_folder()?;
 
         for entry in mods_folder {
@@ -55,6 +61,7 @@ impl<G: Game> SyncManager<G> {
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
+        log::info!("Staging mod: {}", mod_entry.name);
         match mod_entry.kind {
             ModEntryKind::Directory => {
                 let target = staging_path.join(&mod_entry.name);
@@ -80,6 +87,7 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn unstage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Unstaging all mods");
         let staging_path = self.mod_registry.list_staging_folder()?;
         for entry in staging_path {
             self.unstage_one_mod(&entry, state)?;
@@ -93,6 +101,7 @@ impl<G: Game> SyncManager<G> {
         mod_entry: &ModEntry,
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
+        log::info!("Unstaging mod: {}", mod_entry.name);
         let _ = Enabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
 
         if mod_entry.path.exists() {
@@ -107,6 +116,7 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Enabling all staged mods");
         let staging_path = self.mod_registry.list_staging_folder()?;
         for entry in staging_path {
             self.enable_one_mod(&entry, state)?;
@@ -120,6 +130,7 @@ impl<G: Game> SyncManager<G> {
         mod_entry: &ModEntry,
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
+        log::info!("Enabling mod: {}", mod_entry.name);
         let game_mods_path = self.game.game_mod_path();
         Enabler::activate(
             mod_entry.path.as_path(),
@@ -131,6 +142,7 @@ impl<G: Game> SyncManager<G> {
     }
 
     pub fn disable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Disabling all enabled mods");
         let game_mods_path = self.game.game_mod_path();
         let game_mods = self.mod_registry.list_game_mods_folder(&game_mods_path)?;
         for entry in game_mods {
@@ -145,6 +157,7 @@ impl<G: Game> SyncManager<G> {
         mod_entry: &ModEntry,
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
+        log::info!("Disabling mod: {}", mod_entry.name);
         if mod_entry.path.exists() {
             Enabler::deactivate(&mod_entry.path)?;
         }
@@ -160,20 +173,26 @@ impl<G: Game> SyncManager<G> {
     // TODO: Make it handle Modified
     // TODO: Goes from Downloaded to Enabled
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Sync all started");
         let reconciled = state.snapshot();
+        let mut staged = 0;
+        let mut enabled = 0;
         for m in &reconciled {
             match m.status {
                 ModStatus::Downloaded => {
-                    self.stage_one_mod(m.source_entry.as_ref().unwrap(), state)?
+                    self.stage_one_mod(m.source_entry.as_ref().unwrap(), state)?;
+                    staged += 1;
                 }
                 ModStatus::Staged => {
-                    self.enable_one_mod(m.staging_entry.as_ref().unwrap(), state)?
+                    self.enable_one_mod(m.staging_entry.as_ref().unwrap(), state)?;
+                    enabled += 1;
                 }
                 ModStatus::Enabled => continue,
                 ModStatus::Modified => todo!(),
             }
         }
 
+        log::info!("Sync all complete: staged={staged}, enabled={enabled}");
         Ok(())
     }
 

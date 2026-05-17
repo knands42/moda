@@ -9,81 +9,120 @@ use super::message::Message;
 
 pub fn update(app: &mut App, message: Message) {
     match message {
-        Message::TabSelected(tab) => app.current_tab = tab,
+        Message::TabSelected(tab) => {
+            log::debug!("Tab switched to {tab:?}");
+            app.current_tab = tab;
+        }
 
         Message::Reconcile => with_sync_manager(app, |app, sm| {
+            log::info!("Reconcile requested");
             let path = PathBuf::from(&app.game_mod_path);
             match sm.reconcile(&path) {
                 Ok(state) => {
                     app.mod_state = state;
                     app.push_log("Reconciled mods");
+                    log::info!("Reconcile completed successfully");
                 }
-                Err(e) => app.push_log(format!("Reconcile failed: {e}")),
+                Err(e) => {
+                    log::error!("Reconcile failed: {e}");
+                    app.push_log(format!("Reconcile failed: {e}"));
+                }
             }
         }),
 
         Message::SyncAll => {
+            log::info!("Sync all requested");
             with_sync_manager(app, |app, sm| match sm.sync_all(&mut app.mod_state) {
-                Ok(()) => app.push_log("Sync completed"),
-                Err(e) => app.push_log(format!("Sync failed: {e}")),
+                Ok(()) => {
+                    app.push_log("Sync completed");
+                    log::info!("Sync all completed");
+                }
+                Err(e) => {
+                    log::error!("Sync all failed: {e}");
+                    app.push_log(format!("Sync failed: {e}"));
+                }
             })
         }
 
-        Message::StageMod(name) => with_sync_manager(app, |app, sm| {
-            let entry = app
-                .mod_state
-                .get_mod(&name)
-                .and_then(|m| m.source_entry.clone());
-            match entry {
-                Some(e) => match sm.stage_one_mod(&e, &mut app.mod_state) {
-                    Ok(()) => app.push_log(format!("Staged {name}")),
-                    Err(e) => app.push_log(format!("Stage failed: {e}")),
-                },
-                None => app.push_log(format!("{name} not found in downloads")),
-            }
-        }),
+        Message::StageMod(name) => {
+            log::info!("Stage mod requested: {name}");
+            with_sync_manager(app, |app, sm| {
+                let entry = app
+                    .mod_state
+                    .get_mod(&name)
+                    .and_then(|m| m.source_entry.clone());
+                match entry {
+                    Some(e) => match sm.stage_one_mod(&e, &mut app.mod_state) {
+                        Ok(()) => app.push_log(format!("Staged {name}")),
+                        Err(e) => {
+                            log::error!("Stage failed for {name}: {e}");
+                            app.push_log(format!("Stage failed: {e}"));
+                        }
+                    },
+                    None => app.push_log(format!("{name} not found in downloads")),
+                }
+            })
+        }
 
-        Message::UnstageMod(name) => with_sync_manager(app, |app, sm| {
-            let entry = app
-                .mod_state
-                .get_mod(&name)
-                .and_then(|m| m.staging_entry.clone());
-            match entry {
-                Some(e) => match sm.unstage_one_mod(&e, &mut app.mod_state) {
-                    Ok(()) => app.push_log(format!("Unstaged {name}")),
-                    Err(e) => app.push_log(format!("Unstage failed: {e}")),
-                },
-                None => app.push_log(format!("{name} not found in staging")),
-            }
-        }),
+        Message::UnstageMod(name) => {
+            log::info!("Unstage mod requested: {name}");
+            with_sync_manager(app, |app, sm| {
+                let entry = app
+                    .mod_state
+                    .get_mod(&name)
+                    .and_then(|m| m.staging_entry.clone());
+                match entry {
+                    Some(e) => match sm.unstage_one_mod(&e, &mut app.mod_state) {
+                        Ok(()) => app.push_log(format!("Unstaged {name}")),
+                        Err(e) => {
+                            log::error!("Unstage failed for {name}: {e}");
+                            app.push_log(format!("Unstage failed: {e}"));
+                        }
+                    },
+                    None => app.push_log(format!("{name} not found in staging")),
+                }
+            })
+        }
 
-        Message::EnableMod(name) => with_sync_manager(app, |app, sm| {
-            let entry = app
-                .mod_state
-                .get_mod(&name)
-                .and_then(|m| m.staging_entry.clone());
-            match entry {
-                Some(e) => match sm.enable_one_mod(&e, &mut app.mod_state) {
-                    Ok(()) => app.push_log(format!("Enabled {name}")),
-                    Err(e) => app.push_log(format!("Enable failed: {e}")),
-                },
-                None => app.push_log(format!("{name} not found in staging")),
-            }
-        }),
+        Message::EnableMod(name) => {
+            log::info!("Enable mod requested: {name}");
+            with_sync_manager(app, |app, sm| {
+                let entry = app
+                    .mod_state
+                    .get_mod(&name)
+                    .and_then(|m| m.staging_entry.clone());
+                match entry {
+                    Some(e) => match sm.enable_one_mod(&e, &mut app.mod_state) {
+                        Ok(()) => app.push_log(format!("Enabled {name}")),
+                        Err(e) => {
+                            log::error!("Enable failed for {name}: {e}");
+                            app.push_log(format!("Enable failed: {e}"));
+                        }
+                    },
+                    None => app.push_log(format!("{name} not found in staging")),
+                }
+            })
+        }
 
-        Message::DisableMod(name) => with_sync_manager(app, |app, sm| {
-            let entry = app
-                .mod_state
-                .get_mod(&name)
-                .and_then(|m| m.game_entry.clone());
-            match entry {
-                Some(e) => match sm.disable_one_mod(&e, &mut app.mod_state) {
-                    Ok(()) => app.push_log(format!("Disabled {name}")),
-                    Err(e) => app.push_log(format!("Disable failed: {e}")),
-                },
-                None => app.push_log(format!("{name} not found in game mods")),
-            }
-        }),
+        Message::DisableMod(name) => {
+            log::info!("Disable mod requested: {name}");
+            with_sync_manager(app, |app, sm| {
+                let entry = app
+                    .mod_state
+                    .get_mod(&name)
+                    .and_then(|m| m.game_entry.clone());
+                match entry {
+                    Some(e) => match sm.disable_one_mod(&e, &mut app.mod_state) {
+                        Ok(()) => app.push_log(format!("Disabled {name}")),
+                        Err(e) => {
+                            log::error!("Disable failed for {name}: {e}");
+                            app.push_log(format!("Disable failed: {e}"));
+                        }
+                    },
+                    None => app.push_log(format!("{name} not found in game mods")),
+                }
+            })
+        }
     }
 }
 
