@@ -8,12 +8,14 @@ pub struct MarvelRivals {
 
 impl MarvelRivals {
     pub fn new(game_path: PathBuf) -> Self {
-        let mods_path = game_path.join("Mods");
+        let marvel_rivals = Self { game_path: game_path.clone() };
+        
+        let mods_path = marvel_rivals.game_mod_path();
         if !mods_path.exists() {
             std::fs::create_dir_all(&mods_path).ok();
         }
         log::info!("Marvel Rivals initialized at {}", game_path.display());
-        Self { game_path }
+        marvel_rivals
     }
 }
 
@@ -31,7 +33,7 @@ impl Game for MarvelRivals {
     }
 
     fn game_mod_path(&self) -> PathBuf {
-        self.game_path.join("Mods")
+        self.game_path.join("MarvelGame/Marvel/Content/Paks/~mods")
     }
 
     fn pre_setup(&self) -> Result<(), ModManagerError> {

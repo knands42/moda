@@ -125,8 +125,8 @@ fn render_downloads_tab(
         egui::Frame::NONE.corner_radius(8.0).show(ui, |ui| {
             egui::Grid::new("downloads_grid")
                 .striped(true)
-                .spacing([8.0, 0.0])
-                .min_col_width(80.0)
+                .spacing([12.0, 0.0])
+                .min_col_width(120.0)
                 .show(ui, |ui| {
                     ui.strong("Name");
                     ui.strong("Type");

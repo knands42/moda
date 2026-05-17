@@ -12,16 +12,16 @@ impl StardewValley {
     const SMAPI_VERSION: &'static str = "4.5.2";
 
     pub fn new(game_path: PathBuf) -> Self {
-        let mods_path = game_path.join("Mods");
+        let stardew_valley = Self {
+            game_path: game_path.clone(),
+        };
 
+        let mods_path = stardew_valley.game_mod_path();
         if !mods_path.exists() {
             fs::create_dir_all(&mods_path).ok();
             log::info!("Created Mods folder at {}", mods_path.display());
         }
 
-        let stardew_valley = Self {
-            game_path: game_path.clone(),
-        };
         match stardew_valley.pre_setup() {
             Ok(_) => {}
             Err(e) => {
@@ -55,7 +55,7 @@ impl Game for StardewValley {
     }
 
     fn pre_setup(&self) -> Result<(), ModManagerError> {
-        if self.game_path.join("StardewModdingAPI.dll").exists() {
+        if self.game_path.join("SMAPI.Installer.dll").exists() {
             log::info!("SMAPI already installed");
             return Ok(());
         }
