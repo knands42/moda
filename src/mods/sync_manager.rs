@@ -13,17 +13,7 @@ pub struct SyncManager<G: Game> {
     mod_registry: ModRegistry<G>,
 }
 
-pub enum ResolveStatusAfterDisable {
-    Staged,
-    Downloaded,
-    NotFound,
-}
-
-pub enum ResolveStatusAfterUnstage {
-    Downloaded,
-    NotFound,
-}
-
+// TODO: split into multiple impl blocks
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
         let mod_registry = ModRegistry::new(config.clone());
@@ -66,19 +56,30 @@ impl<G: Game> SyncManager<G> {
             ModEntryKind::Directory => {
                 let target = staging_path.join(&mod_entry.name);
                 Installer::install(&ModSource::LocalDir(mod_entry.path.clone()), &target)?;
-                state.set_staged(&mod_entry.name);
+                let staging_entry = ModEntry {
+                    name: mod_entry.name.clone(),
+                    path: target,
+                    kind: ModEntryKind::Directory,
+                    metadata: None,
+                };
+                state.set_staged(&staging_entry);
             }
             ModEntryKind::ZipArchive => {
                 let (staging_name, target) = match Installer::zip_wrap_directory(&mod_entry.path)? {
-                    Some(dir) => (dir, staging_path),
+                    Some(dir) => (dir, staging_path.clone()),
                     None => {
                         let name = strip_zip_ext(&mod_entry.name);
-                        let target = staging_path.join(&name);
-                        (name, target)
+                        (name.clone(), staging_path.join(&name))
                     }
                 };
                 Installer::install(&ModSource::LocalZip(mod_entry.path.clone()), &target)?;
-                state.set_staged(&staging_name);
+                let staging_entry = ModEntry {
+                    name: staging_name.clone(),
+                    path: staging_path.join(&staging_name),
+                    kind: ModEntryKind::Directory,
+                    metadata: None,
+                };
+                state.set_staged(&staging_entry);
             }
             _ => {}
         }
@@ -108,10 +109,7 @@ impl<G: Game> SyncManager<G> {
             Installer::uninstall_from_dir(&mod_entry.path)?;
         }
 
-        match self.resolve_status_after_unstage(&mod_entry.name)? {
-            ResolveStatusAfterUnstage::Downloaded => state.set_downloaded(&mod_entry.name),
-            ResolveStatusAfterUnstage::NotFound => state.remove(&mod_entry.name),
-        }
+        self.resolve_after_unstage(mod_entry, state);
         Ok(())
     }
 
@@ -132,12 +130,16 @@ impl<G: Game> SyncManager<G> {
     ) -> Result<(), ModManagerError> {
         log::info!("Enabling mod: {}", mod_entry.name);
         let game_mods_path = self.game.game_mod_path();
-        Enabler::activate(
-            mod_entry.path.as_path(),
-            game_mods_path.join(&mod_entry.name).as_path(),
-        )?;
+        let game_entry_path = game_mods_path.join(&mod_entry.name);
+        Enabler::activate(mod_entry.path.as_path(), game_entry_path.as_path())?;
 
-        state.set_enabled(&mod_entry.name);
+        let game_entry = ModEntry {
+            name: mod_entry.name.clone(),
+            path: game_entry_path,
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        };
+        state.set_enabled(&game_entry);
         Ok(())
     }
 
@@ -162,11 +164,7 @@ impl<G: Game> SyncManager<G> {
             Enabler::deactivate(&mod_entry.path)?;
         }
 
-        match self.resolve_status_after_disable(&mod_entry.name)? {
-            ResolveStatusAfterDisable::Staged => state.set_staged(&mod_entry.name),
-            ResolveStatusAfterDisable::Downloaded => state.set_downloaded(&mod_entry.name),
-            ResolveStatusAfterDisable::NotFound => state.remove(&mod_entry.name),
-        }
+        self.resolve_after_disable(mod_entry, state)?;
         Ok(())
     }
 
@@ -200,27 +198,35 @@ impl<G: Game> SyncManager<G> {
         PathBuf::from(&self.config.staging_root_path).join(G::registry_id())
     }
 
-    fn resolve_status_after_disable(
+    fn resolve_after_disable(
         &self,
-        mod_name: &str,
-    ) -> Result<ResolveStatusAfterDisable, ModManagerError> {
-        if self.mod_registry.get_staged_mod_by_name(mod_name).is_ok() {
-            return Ok(ResolveStatusAfterDisable::Staged);
+        mod_entry: &ModEntry,
+        state: &mut ModState,
+    ) -> Result<(), ModManagerError> {
+        state.set_disabled(&mod_entry.name);
+        if self
+            .mod_registry
+            .get_staged_mod_by_name(&mod_entry.name)
+            .is_ok()
+        {
+            let staging = self.mod_registry.get_staged_mod_by_name(&mod_entry.name)?;
+            state.set_staged(&staging);
+        } else if self.mod_registry.get_mod_by_name(&mod_entry.name).is_ok() {
+            let src = self.mod_registry.get_mod_by_name(&mod_entry.name)?;
+            state.set_downloaded(&src);
+        } else {
+            state.remove(&mod_entry.name);
         }
-        if self.mod_registry.get_mod_by_name(mod_name).is_ok() {
-            return Ok(ResolveStatusAfterDisable::Downloaded);
-        }
-        Ok(ResolveStatusAfterDisable::NotFound) // not found anywhere → remove
+
+        Ok(())
     }
 
-    fn resolve_status_after_unstage(
-        &self,
-        mod_name: &str,
-    ) -> Result<ResolveStatusAfterUnstage, ModManagerError> {
-        if self.mod_registry.get_mod_by_name(mod_name).is_ok() {
-            return Ok(ResolveStatusAfterUnstage::Downloaded);
+    fn resolve_after_unstage(&self, mod_entry: &ModEntry, state: &mut ModState) {
+        state.set_unstaged(&mod_entry.name);
+        if let Ok(src) = self.mod_registry.get_mod_by_name(&mod_entry.name) {
+            state.set_downloaded(&src);
+        } else {
+            state.remove(&mod_entry.name);
         }
-
-        Ok(ResolveStatusAfterUnstage::NotFound)
     }
 }

@@ -346,8 +346,8 @@ fn test_unstage_one_mod_nonexistent_path() {
 
 #[test]
 fn test_unstage_mods_batch() {
-    // Given: three mods — one staged with source, one staged without source,
-    //        one enabled with source and staging
+    // Given: four mods — one staged with source, one staged without source,
+    //        one enabled with source and staging, one downloaded
     let temp = TempDir::new().unwrap();
     let mods_path = temp.path().join("mods").join("stardew_valley");
     let staging_path = temp.path().join("staging").join("stardew_valley");

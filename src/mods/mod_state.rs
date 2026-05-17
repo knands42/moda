@@ -1,4 +1,4 @@
-use crate::mods::mod_registry::{ModStatus, ReconciledMod};
+use crate::mods::mod_registry::{ModEntry, ModStatus, ReconciledMod};
 use std::collections::HashMap;
 
 #[derive(Clone, Default)]
@@ -19,24 +19,54 @@ impl ModState {
 }
 
 impl ModState {
-    pub fn set_staged(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
+    pub fn set_staged(&mut self, mod_entry: &ModEntry) {
+        let base = mod_entry
+            .name
+            .strip_suffix(".zip")
+            .unwrap_or(&mod_entry.name);
         if let Some(m) = self.mods.get_mut(base) {
             m.status = ModStatus::Staged;
+            m.staging_entry = Some(mod_entry.clone());
+            m.game_entry = None;
         }
     }
 
-    pub fn set_downloaded(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
+    pub fn set_downloaded(&mut self, mod_entry: &ModEntry) {
+        let base = mod_entry
+            .name
+            .strip_suffix(".zip")
+            .unwrap_or(&mod_entry.name);
         if let Some(m) = self.mods.get_mut(base) {
             m.status = ModStatus::Downloaded;
+            m.source_entry = Some(mod_entry.clone());
+            m.staging_entry = None;
+            m.game_entry = None;
         }
     }
 
-    pub fn set_enabled(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
+    pub fn set_enabled(&mut self, mod_entry: &ModEntry) {
+        let base = mod_entry
+            .name
+            .strip_suffix(".zip")
+            .unwrap_or(&mod_entry.name);
         if let Some(m) = self.mods.get_mut(base) {
             m.status = ModStatus::Enabled;
+            m.game_entry = Some(mod_entry.clone());
+        }
+    }
+
+    pub fn set_unstaged(&mut self, name: &str) {
+        let base = name.strip_suffix(".zip").unwrap_or(name);
+        if let Some(m) = self.mods.get_mut(base) {
+            m.staging_entry = None;
+            m.game_entry = None;
+        }
+    }
+
+    pub fn set_disabled(&mut self, name: &str) {
+        let base = name.strip_suffix(".zip").unwrap_or(name);
+        if let Some(m) = self.mods.get_mut(base) {
+            m.game_entry = None;
         }
     }
 
