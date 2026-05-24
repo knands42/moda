@@ -8,12 +8,19 @@ use crate::config::Config;
 use crate::error::ModManagerError;
 use std::path::PathBuf;
 
+pub enum ModMode {
+    Symlink,
+    Pak,
+    DirectCopy
+}
+
 pub trait Game {
     fn name() -> &'static str;
     fn game_path(&self) -> PathBuf;
     fn set_game_path(&mut self, game_path: PathBuf);
     fn game_mod_path(&self) -> PathBuf;
     fn pre_setup(&self) -> Result<(), ModManagerError>;
+    fn mod_mode() -> ModMode;
     fn discover_path(config: &Config) -> Option<PathBuf> {
         config
             .game_search_paths

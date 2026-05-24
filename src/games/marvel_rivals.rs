@@ -1,5 +1,5 @@
 use crate::error::ModManagerError;
-use crate::games::Game;
+use crate::games::{Game, ModMode};
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -123,6 +123,8 @@ impl Game for MarvelRivals {
     fn registry_id() -> &'static str {
         "marvel_rivals"
     }
+    
+    fn mod_mode() -> ModMode { ModMode::Symlink }
 }
 
 fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> Result<(), ModManagerError> {

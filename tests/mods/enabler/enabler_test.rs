@@ -1,5 +1,5 @@
 use moda::error::ModManagerError;
-use moda::mods::Enabler;
+use moda::mods::SymlinkEnabler;
 use std::fs;
 use tempfile::TempDir;
 
@@ -11,7 +11,7 @@ fn test_activate_source_not_exists() {
     let target = temp_dir.path().join("target");
 
     // When: activate is called with the non-existent source
-    let result = Enabler::activate(&source, &target);
+    let result = SymlinkEnabler::activate(&source, &target);
 
     // Then: it returns a NotFound IoError
     assert!(result.is_err());
@@ -32,7 +32,7 @@ fn test_activate_parent_directory_created() {
     let target = temp_dir.path().join("nested/dir/target.txt");
 
     // When: activate is called
-    let result = Enabler::activate(&source, &target);
+    let result = SymlinkEnabler::activate(&source, &target);
 
     // Then: a symlink is created and the parent directory exists
     assert!(result.is_ok());
@@ -52,7 +52,7 @@ fn test_activate_existing_symlink_removed() {
     assert!(target.is_symlink());
 
     // When: activate is called again for the same target
-    let result = Enabler::activate(&source, &target);
+    let result = SymlinkEnabler::activate(&source, &target);
 
     // Then: the old symlink is replaced and a new one is created
     assert!(result.is_ok());
@@ -69,7 +69,7 @@ fn test_activate_target_exists_not_symlink() {
     fs::write(&target, "existing file").unwrap();
 
     // When: activate is called
-    let result = Enabler::activate(&source, &target);
+    let result = SymlinkEnabler::activate(&source, &target);
 
     // Then: it returns an AlreadyExists IoError
     assert!(result.is_err());
@@ -90,7 +90,7 @@ fn test_activate_successful_symlink() {
     let target = temp_dir.path().join("target.txt");
 
     // When: activate is called
-    let result = Enabler::activate(&source, &target);
+    let result = SymlinkEnabler::activate(&source, &target);
 
     // Then: a symlink is created successfully
     assert!(result.is_ok());

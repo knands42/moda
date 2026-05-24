@@ -6,6 +6,7 @@ use crate::mods::catalog::ModEntry;
 use crate::mods::ModState;
 use crate::mods::SyncManager;
 
+// TODO: make this not rely on additional entries, but dynamic
 pub enum ActiveGame {
     StardewValley(SyncManager<StardewValley>, ModState),
     MarvelRivals(SyncManager<MarvelRivals>, ModState),

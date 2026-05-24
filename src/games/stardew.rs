@@ -1,5 +1,5 @@
 use crate::error::ModManagerError;
-use crate::games::Game;
+use crate::games::{Game, ModMode};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -118,6 +118,8 @@ impl Game for StardewValley {
     fn registry_id() -> &'static str {
         "stardew_valley"
     }
+    
+    fn mod_mode() -> ModMode { ModMode::Symlink }
 }
 
 fn find_smapi_platform_dir(extract_dir: &Path) -> Result<PathBuf, ModManagerError> {

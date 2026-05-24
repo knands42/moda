@@ -1,9 +1,9 @@
 use crate::error::ModManagerError;
 use std::path::Path;
 
-pub struct Enabler;
+pub struct SymlinkEnabler;
 
-impl Enabler {
+impl SymlinkEnabler {
     pub fn activate(source: &Path, target: &Path) -> Result<(), ModManagerError> {
         if !source.exists() {
             log::error!("Activation source not found: {}", source.display());

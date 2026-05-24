@@ -1,5 +1,5 @@
 mod downloader;
-mod enabler_test;
+mod enabler;
 mod installer_test;
 mod mod_registry_test;
 mod sync_manager_test;

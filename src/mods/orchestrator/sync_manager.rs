@@ -4,7 +4,7 @@ use crate::games::Game;
 use crate::mods::catalog::{Catalog, ModEntry, ModEntryKind, ModStatus};
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
-use crate::mods::{Enabler, Installer, ModSource};
+use crate::mods::{SymlinkEnabler, Installer, ModSource};
 use std::path::{Path, PathBuf};
 
 pub struct SyncManager<G: Game> {
@@ -107,7 +107,7 @@ impl<G: Game> SyncManager<G> {
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
         log::info!("Unstaging mod: {}", mod_entry.name);
-        let _ = Enabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
+        let _ = SymlinkEnabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
 
         if mod_entry.path.exists() {
             Installer::uninstall_from_dir(&mod_entry.path)?;
@@ -144,7 +144,7 @@ impl<G: Game> SyncManager<G> {
         log::info!("Enabling mod: {}", mod_entry.name);
         let game_mods_path = self.game.game_mod_path();
         let game_entry_path = game_mods_path.join(&mod_entry.name);
-        Enabler::activate(mod_entry.path.as_path(), game_entry_path.as_path())?;
+        SymlinkEnabler::activate(mod_entry.path.as_path(), game_entry_path.as_path())?;
 
         let game_entry = ModEntry {
             name: mod_entry.name.clone(),
@@ -180,7 +180,7 @@ impl<G: Game> SyncManager<G> {
     ) -> Result<(), ModManagerError> {
         log::info!("Disabling mod: {}", mod_entry.name);
         if mod_entry.path.exists() {
-            Enabler::deactivate(&mod_entry.path)?;
+            SymlinkEnabler::deactivate(&mod_entry.path)?;
         }
 
         self.resolve_after_disable(mod_entry, state)?;
