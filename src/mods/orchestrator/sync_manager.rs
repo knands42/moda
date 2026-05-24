@@ -1,11 +1,12 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
-use crate::games::{Game, ModMode};
+use crate::games::Game;
 use crate::mods::catalog::{Catalog, ModEntry, ModEntryKind, ModStatus};
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
 use crate::mods::{SymlinkEnabler, Installer, ModSource};
 use std::path::{Path, PathBuf};
+use crate::mods::enabler::Enabler;
 
 pub struct SyncManager<G: Game> {
     pub(super) game: G,

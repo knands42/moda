@@ -1,10 +1,11 @@
 use crate::error::ModManagerError;
 use std::path::Path;
+use crate::mods::enabler::Enabler;
 
 pub struct SymlinkEnabler;
 
-impl SymlinkEnabler {
-    pub fn activate(source: &Path, target: &Path) -> Result<(), ModManagerError> {
+impl Enabler for SymlinkEnabler {
+    fn activate(source: &Path, target: &Path) -> Result<(), ModManagerError> {
         if !source.exists() {
             log::error!("Activation source not found: {}", source.display());
             return Err(ModManagerError::IoError(std::io::Error::new(
@@ -43,7 +44,7 @@ impl SymlinkEnabler {
         std::os::unix::fs::symlink(source, target).map_err(ModManagerError::IoError)
     }
 
-    pub fn deactivate(mod_path: &Path) -> Result<(), ModManagerError> {
+    fn deactivate(mod_path: &Path) -> Result<(), ModManagerError> {
         if mod_path.is_symlink() {
             log::debug!("Removing symlink at {}", mod_path.display());
             std::fs::remove_file(mod_path).map_err(ModManagerError::IoError)?;
