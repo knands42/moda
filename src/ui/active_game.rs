@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::config::Config;
 use crate::error::ModManagerError;
-use crate::games::{Game, GameDescriptor};
+use crate::games::{Game, GameDescriptor, ModMode};
 use crate::mods::catalog::ModEntry;
 use crate::mods::ModState;
 use crate::mods::SyncManagerOps;
@@ -36,6 +36,10 @@ impl ActiveGame {
 
     pub fn registry_id(&self) -> &'static str {
         self.descriptor().registry_id
+    }
+
+    pub fn mod_mode(&self) -> ModMode {
+        self.game().mod_mode()
     }
 
     pub fn game_name(&self) -> &'static str {

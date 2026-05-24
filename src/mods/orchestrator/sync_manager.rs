@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
-use crate::games::Game;
+use crate::games::{Game, ModMode};
 use crate::mods::catalog::{Catalog, ModEntry, ModEntryKind, ModStatus};
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;

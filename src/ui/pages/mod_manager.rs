@@ -1,3 +1,4 @@
+use crate::games::ModMode;
 use crate::mods::catalog::{ModEntry, ModEntryKind, ModStatus};
 use crate::ui::active_game::ActiveGame;
 
@@ -205,6 +206,24 @@ fn render_staging_tab(ui: &mut egui::Ui, active_game: &mut ActiveGame, error: &m
         });
         return;
     }
+
+    let mod_mode = active_game.mod_mode();
+    let mode_label = match mod_mode {
+        ModMode::Symlink => "Symlink",
+        ModMode::Pak => "Pak",
+        ModMode::DirectCopy => "Direct Copy",
+    };
+
+    ui.horizontal(|ui| {
+        ui.label(egui::RichText::new("Mode:").size(12.0).color(style::TEXT_MUTED));
+        ui.label(
+            egui::RichText::new(mode_label)
+                .size(12.0)
+                .color(style::ACCENT)
+                .strong(),
+        );
+    });
+    ui.add_space(6.0);
 
     let mut to_enable: Option<ModEntry> = None;
     let mut to_disable: Option<ModEntry> = None;
