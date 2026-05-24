@@ -8,15 +8,16 @@ use crate::mods::{SymlinkEnabler, Installer, ModSource};
 use std::path::{Path, PathBuf};
 
 pub struct SyncManager<G: Game> {
-    game: G,
+    pub(super) game: G,
     config: Config,
-    mod_registry: Catalog<G>,
+    mod_registry: Catalog,
 }
 
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
-        let mod_registry = Catalog::new(config.clone());
-        log::debug!("SyncManager created for game: {}", G::name());
+        let descriptor = game.descriptor();
+        let mod_registry = Catalog::new(config.clone(), descriptor.registry_id);
+        log::debug!("SyncManager created for game: {}", descriptor.name);
         Self {
             game,
             config,
@@ -222,7 +223,7 @@ impl<G: Game> SyncManager<G> {
     }
 
     fn get_staging_path(&self) -> PathBuf {
-        PathBuf::from(&self.config.staging_root_path).join(G::registry_id())
+        PathBuf::from(&self.config.staging_root_path).join(self.game.descriptor().registry_id)
     }
 }
 

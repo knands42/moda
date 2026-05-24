@@ -57,8 +57,8 @@ fn mock_smapi_download(server: &mut Server, status: usize, body: Vec<u8>) -> Str
 
 #[test]
 fn test_new_creates_instance() {
-    let name = StardewValley::name();
-    assert_eq!(name, "Stardew Valley");
+    let sv = StardewValley::new(PathBuf::from("/games/stardew"));
+    assert_eq!(sv.descriptor().name, "Stardew Valley");
 }
 
 #[test]
@@ -72,8 +72,8 @@ fn test_path_getters() {
 
 #[test]
 fn test_registry_id() {
-    let id = <StardewValley as Game>::registry_id();
-    assert_eq!(id, "stardew_valley");
+    let sv = StardewValley::new(PathBuf::from("/games/stardew"));
+    assert_eq!(sv.descriptor().registry_id, "stardew_valley");
 }
 
 #[test]

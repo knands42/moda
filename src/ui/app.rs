@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::error::ModManagerError;
+use crate::games::GameDescriptor;
 use crate::ui::active_game::ActiveGame;
 
 use super::style;
@@ -7,17 +7,14 @@ use super::widgets::dir_browser::DirBrowser;
 
 use std::path::PathBuf;
 
-type GameCreator = Box<dyn FnOnce(&Config, PathBuf) -> Result<ActiveGame, ModManagerError>>;
-
 pub enum Tab {
     Downloads,
     Staging,
 }
 
 pub struct PathDialogState {
-    pub game_name: &'static str,
+    pub descriptor: &'static GameDescriptor,
     pub path: String,
-    pub creator: GameCreator,
 }
 
 pub struct ModaApp {
@@ -147,7 +144,7 @@ impl eframe::App for ModaApp {
         let ctx = ui.ctx();
 
         if self.path_dialog.is_some() {
-            let game_name = self.path_dialog.as_ref().unwrap().game_name;
+            let game_name = self.path_dialog.as_ref().unwrap().descriptor.name;
             let mut close = false;
             let mut confirm = false;
             let mut browse = false;
@@ -231,7 +228,7 @@ impl eframe::App for ModaApp {
                 if let Some(state) = self.path_dialog.take() {
                     let path = PathBuf::from(&state.path);
                     if path.exists() && path.is_dir() {
-                        match (state.creator)(&self.config, path) {
+                        match ActiveGame::create(state.descriptor, path, &self.config) {
                             Ok(active) => {
                                 self.active_game = Some(active);
                                 self.page = Page::ModManager;

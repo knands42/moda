@@ -1,4 +1,3 @@
-use moda::games::StardewValley;
 use moda::mods::catalog::{Catalog, ModEntryKind, ModStatus};
 use std::fs;
 use tempfile::TempDir;
@@ -13,7 +12,7 @@ fn test_reconcile_empty() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 
@@ -37,7 +36,7 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 
@@ -86,7 +85,7 @@ fn test_reconcile_zip_variants() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 
@@ -176,7 +175,7 @@ fn test_reconcile_multiple_mixed_states() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
     let snapshot = result.snapshot();
@@ -267,7 +266,7 @@ fn test_reconcile_enabled_mod_without_staging() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 
@@ -308,7 +307,7 @@ fn test_reconcile_orphan_enabled() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 
@@ -339,7 +338,7 @@ fn test_reconcile_orphan_staged() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 
@@ -393,7 +392,7 @@ fn test_reconcile_modified() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
     let snapshot = result.snapshot();
@@ -469,7 +468,7 @@ fn test_reconcile_enabled_with_staging_only_no_source() {
         temp.path().join("mods").to_str().unwrap(),
         temp.path().join("staging").to_str().unwrap(),
     );
-    let catalog: Catalog<StardewValley> = Catalog::new(config);
+    let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
 

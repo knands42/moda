@@ -1,12 +1,10 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
-use crate::games::Game;
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
 use crate::mods::Installer;
 use std::collections::HashMap;
 use std::fs;
-use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]
@@ -43,22 +41,20 @@ pub enum ModEntryKind {
     Other,
 }
 
-pub struct Catalog<G: Game> {
+pub struct Catalog {
     config: Config,
-    _game: PhantomData<G>,
+    registry_id: &'static str,
 }
 
-impl<G: Game> Catalog<G> {
-    pub fn new(config: Config) -> Self {
-        log::debug!("ModRegistry created for game: {}", G::registry_id());
+impl Catalog {
+    pub fn new(config: Config, registry_id: &'static str) -> Self {
+        log::debug!("ModRegistry created for game: {}", registry_id);
         Self {
             config,
-            _game: PhantomData,
+            registry_id,
         }
     }
-}
 
-impl<G: Game> Catalog<G> {
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;
@@ -158,7 +154,7 @@ impl<G: Game> Catalog<G> {
     }
 
     fn list_mods_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
-        let mods_root_path = PathBuf::from(&self.config.mods_root_path).join(G::registry_id());
+        let mods_root_path = PathBuf::from(&self.config.mods_root_path).join(self.registry_id);
         let entries = self.list_folder(mods_root_path)?;
         log::debug!("Found {} mods in source folder", entries.len());
         Ok(entries)
@@ -166,7 +162,7 @@ impl<G: Game> Catalog<G> {
 
     fn list_staging_folder(&self) -> Result<Vec<ModEntry>, ModManagerError> {
         let mods_staging_path =
-            PathBuf::from(&self.config.staging_root_path).join(G::registry_id());
+            PathBuf::from(&self.config.staging_root_path).join(self.registry_id);
         let entries = self.list_folder(mods_staging_path)?;
         log::debug!("Found {} mods in staging folder", entries.len());
         Ok(entries)
