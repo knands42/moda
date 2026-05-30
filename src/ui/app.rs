@@ -141,9 +141,9 @@ impl eframe::App for ModaApp {
             let mut browse = false;
 
             egui::Window::new("Game Path Required")
-                .anchor(egui::Align2::CENTER_CENTER, [100.0, 0.0])
-                .resizable(false)
-                .default_size([450.0, 200.0])
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .resizable(true)
+                .default_size([550.0, 200.0])
                 .show(ctx, |ui| {
                     ui.vertical(|ui| {
                         ui.label(
@@ -162,10 +162,14 @@ impl eframe::App for ModaApp {
                                     .size(13.0)
                                     .color(style::TEXT_MUTED),
                             );
+                            let browse_width = 90.0;
+                            let spacing = ui.spacing().item_spacing.x;
+                            let path_width =
+                                (ui.available_width() - browse_width - spacing).max(120.0);
                             ui.add(
                                 egui::TextEdit::singleline(path)
                                     .hint_text("/path/to/game")
-                                    .desired_width(f32::INFINITY),
+                                    .desired_width(path_width),
                             );
                             if ui
                                 .button(
@@ -246,7 +250,8 @@ impl eframe::App for ModaApp {
             if let Some(selected) = self.pending_select.take() {
                 if let Some(ref mut state) = self.path_dialog {
                     state.path = selected.to_string_lossy().to_string();
-                    self.config.write_new_game_path(state.descriptor.registry_id, selected);
+                    self.config
+                        .write_new_game_path(state.descriptor.registry_id, selected);
                 }
             }
         }
