@@ -1,6 +1,7 @@
 # Moda
 
 ## Project Overview
+
 Mod manager for Linux built with Rust + egui. Starting with Stardew Valley, designed for multi-game extensibility.
 
 ## Showcase
@@ -10,8 +11,8 @@ Mod manager for Linux built with Rust + egui. Starting with Stardew Valley, desi
 **Mod Manager Page**
 <img src="./assets/mod_manager_page.png" alt="mod manager page">
 
-
 ## Developer Commands
+
 ```bash
 cargo run --bin moda                  # Run the app
 cargo test                            # Run all tests
@@ -23,12 +24,14 @@ cargo fmt -- --check                 # Check formatting
 ## Architecture
 
 ### Core Design Principles
+
 - **Game-agnostic core**: Game-specific logic lives in separate modules/crates, not in core
 - **Stock game approach**: Keep game folder clean; manage mods in a separate library folder (like Wabbajack)
 - **Profile-based**: Support multiple profiles per game from the start
 - **Mod collections**: Support both native JSON format and Nexus collections import
 
 ### Current Crate Structure
+
 ```
 moda/
 ├── Cargo.toml
@@ -40,28 +43,34 @@ moda/
 │   ├── ui/                  # egui UI (app, pages, widgets)
 │   ├── games/
 │   │   ├── mod.rs           # Game trait definition
-│   │   └── stardew.rs       # Stardew Valley implementation
+│   │   ├── stardew.rs       # Stardew Valley implementation
+│   │   ├── mad_max.rs       # Mad Max implementation
+│   │   └── marvel_rivals.rs # Marvel Rivals implementation
 │   ├── mods/
 │   │   ├── mod.rs           # Re-exports public mod modules
+│   │   ├── catalog.rs       # Mod catalog (indexing available mods)
+│   │   ├── installer.rs     # Mod installation logic
+│   │   ├── mod_state.rs     # Mod state tracking
 │   │   ├── downloader/
 │   │   │   ├── mod.rs       # Downloader abstraction
 │   │   │   └── nexus.rs     # Nexus API client
-│   │   ├── enabler.rs       # Mod enable/disable management
-│   │   ├── installer.rs     # Mod installation logic (ModSource enum + Installer struct)
-│   │   ├── mod_registry.rs  # Mod registry / lookup
-│   │   ├── mod_state.rs     # Mod state tracking
-│   │   └── sync_manager.rs  # Sync logic between library and game folder
+│   │   ├── enabler/
+│   │   │   ├── mod.rs                      # Enabler abstraction
+│   │   │   ├── symlink_enabler.rs          # Only symlink mods to game folder
+│   │   │   ├── direct_copy_enabler.rs      # Directly copy files to game folder
+│   │   │   └── pak_enabler.rs              # Pak files (e.g. RE2 Remake)
+│   │   └── orchestrator/
+│   │       ├── mod.rs       # Orchestrator abstraction
+│   │       └── sync_manager.rs  # Sync logic between library and game folder
 │   └── profiles/
 │       └── mod.rs           # Profile management (stub)
 └── tests/
-    ├── games/
-    ├── mods/
-    └── profiles/
 ```
 
 ## Flow
 
 ### Component Interaction
+
 ```mermaid
 flowchart LR
     UI[egui UI] --> SM[SyncManager]
@@ -74,25 +83,27 @@ flowchart LR
     EN --> FS
     CFG[Config] --> SM
     CT --> MS
-    
     GAME[Game Trait] --> SM
     StardewValley[Stardew Valley] --> GAME
     MarvelRivals[Marvel Rivals] --> GAME
 ```
 
 ### Mod Lifecycle
+
 ```mermaid
 stateDiagram-v2
     direction LR
     [*] --> Downloaded
-    Downloaded --> Staged : stage
-    Staged --> Enabled : enable (symlink)
-    Enabled --> Staged : disable
-    Staged --> Downloaded : unstage
+    Downloaded --> Staged: stage
+    Staged --> Enabled: enable (symlink)
+    Enabled --> Staged: disable
+    Staged --> Downloaded: unstage
 ```
 
 ## Important Constraints
+
 - **Rust learning project**: My first rust project :)
 - **egui UI**: State management via `eframe::App` with modular pages under `src/ui/`
-- **Nexus API**: Requires API key if want to download mods automatically without a browser; store in `~/.config/moda/config.toml`
+- **Nexus API**: Requires API key if want to download mods automatically without a browser; store in
+  `~/.config/moda/config.toml`
 - **Collections**: Two formats planned — native JSON format + Nexus collections import

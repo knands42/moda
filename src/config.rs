@@ -73,7 +73,6 @@ impl Config {
         };
 
         if self.create_new_config(&new_text).is_err() {
-            log::error!("Failed to write config");
             return;
         };
 

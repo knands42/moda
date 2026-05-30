@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 pub struct DirBrowser {
     pub visible: bool,
     current_dir: PathBuf,
+    path_input: String,
     entries: Vec<PathBuf>,
     error: Option<String>,
 }
@@ -16,9 +17,11 @@ impl Default for DirBrowser {
 impl DirBrowser {
     pub fn new() -> Self {
         let start = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+        let path_input = start.to_string_lossy().to_string();
         let mut browser = Self {
             visible: false,
             current_dir: start,
+            path_input,
             entries: Vec::new(),
             error: None,
         };
@@ -67,19 +70,15 @@ impl DirBrowser {
             ui.add_space(8.0);
 
             ui.horizontal(|ui| {
-                let path_text = self.current_dir.to_string_lossy().to_string();
-                let mut edit = path_text.clone();
                 let resp = ui.add(
-                    egui::TextEdit::singleline(&mut edit)
+                    egui::TextEdit::singleline(&mut self.path_input)
                         .font(egui::TextStyle::Monospace)
                         .desired_width(ui.available_width()),
                 );
-                if resp.changed() && !edit.is_empty() {
-                    let new_path = PathBuf::from(&edit);
-                    if new_path.exists() && new_path.is_dir() {
-                        self.current_dir = new_path;
-                        self.refresh();
-                    }
+
+                let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                if resp.lost_focus() && enter_pressed && !self.path_input.is_empty() {
+                    self.submit_path_input();
                 }
             });
             ui.add_space(4.0);
@@ -99,7 +98,11 @@ impl DirBrowser {
                 .show(ui, |ui| {
                     let up_btn =
                         egui::Button::selectable(false, "..").fill(super::super::style::CARD_BG);
-                    if ui.add(up_btn).clicked() {
+                    if ui
+                        .add(up_btn)
+                        .on_hover_cursor(egui::CursorIcon::PointingHand)
+                        .clicked()
+                    {
                         self.navigate_up();
                     }
 
@@ -112,15 +115,14 @@ impl DirBrowser {
                             .unwrap_or_default()
                             .to_string_lossy()
                             .to_string();
-                        if name.starts_with('.') {
-                            continue;
-                        }
-
                         let label = egui::Label::new(
                             egui::RichText::new(format!("\u{1F4C1}  {}", name)).size(13.0),
                         );
-                        let resp = ui.add(label).interact(egui::Sense::click());
-                        if resp.double_clicked() {
+                        let resp = ui
+                            .add(label)
+                            .interact(egui::Sense::click())
+                            .on_hover_cursor(egui::CursorIcon::PointingHand);
+                        if resp.clicked() {
                             self.navigate_to(entry);
                         }
                     }
@@ -145,7 +147,11 @@ impl DirBrowser {
                     )
                     .fill(super::super::style::ACCENT)
                     .min_size(egui::vec2(160.0, 30.0));
-                    if ui.add(select_btn).clicked() {
+                    if ui
+                        .add(select_btn)
+                        .on_hover_cursor(egui::CursorIcon::PointingHand)
+                        .clicked()
+                    {
                         *on_select = Some(self.current_dir.clone());
                         self.visible = false;
                     }
@@ -154,9 +160,21 @@ impl DirBrowser {
         });
     }
 
+    fn submit_path_input(&mut self) {
+        let new_path = PathBuf::from(self.path_input.trim());
+        if new_path.is_dir() {
+            self.navigate_to(&new_path);
+        } else if new_path.exists() {
+            self.error = Some("Path exists but is not a directory".to_string());
+        } else {
+            self.error = Some("Path does not exist or is not a directory".to_string());
+        }
+    }
+
     fn navigate_to(&mut self, path: &Path) {
         if path.is_dir() {
             self.current_dir = path.to_path_buf();
+            self.path_input = self.current_dir.to_string_lossy().to_string();
             self.refresh();
         }
     }
@@ -164,6 +182,7 @@ impl DirBrowser {
     fn navigate_up(&mut self) {
         if let Some(parent) = self.current_dir.parent() {
             self.current_dir = parent.to_path_buf();
+            self.path_input = self.current_dir.to_string_lossy().to_string();
             self.refresh();
         }
     }

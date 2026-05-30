@@ -1,21 +1,21 @@
 nexus_api_key = "your-key-here"
 mods_root_path = "$HOME/.moda/mods"
 staging_root_path = "$HOME/.moda/staging"
-actual_config_path = "$HOME/.moda"
+actual_config_path = "$HOME/.config/moda/config.toml"
 
 [game_search_paths]
 stardew_valley = [
-    "$HOME/.steam/steam/steamapps/common/Stardew Valley",
     "$HOME/.local/share/Steam/steamapps/common/Stardew Valley",
+    "$HOME/.steam/steam/steamapps/common/Stardew Valley",
     "/usr/share/steam/steamapps/common/Stardew Valley"
 ]
 marvel_rivals = [
-    "$HOME/.steam/steam/steamapps/common/MarvelRivals",
     "$HOME/.local/share/Steam/steamapps/common/MarvelRivals",
+    "$HOME/.steam/steam/steamapps/common/MarvelRivals",
     "/usr/share/steam/steamapps/common/MarvelRivals"
 ]
 mad_max = [
-    "$HOME/.steam/steam/steamapps/common/Mad Max",
     "$HOME/.local/share/Steam/steamapps/common/Mad Max",
+    "$HOME/.steam/steam/steamapps/common/Mad Max",
     "/usr/share/steam/steamapps/common/Mad Max"
 ]

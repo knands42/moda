@@ -1,13 +1,16 @@
-- [x] Make the config file auto create the config file at the designed location and with default values (based on user $HOME)
-- [x] pop up a dialog for user to manually provide default game path if not found
-- [x] Reconcile at the start when the game is selected
-- [x] auto setup the selected game (e.g., stardew valley needs to configure smapi)
-- [ ] allow users to reconcile when they feel the need to
-- [ ] Memoize zip wrap directory method?
-- [ ] Create background jobs to update the state periodically in batches
-- [ ] Use iNotify to listen manual changes in directories and reflect the changes on the state
-- [ ] Track state on a sqlite
-- [ ] Add profile management
-- [ ] Support download of collection
-- [ ] Open Browser to download mods
-- [ ] Add Marvel Rivals support modding
+# Milestones
+
+## Completed
+- Stardew Valley game support
+- Mod syncing (symlink enabler)
+- egui UI framework
+- Config & 
+
+## IN PROGRESS
+- `direct_copy_enabler` mod type
+- `marvel_rivals` game support
+- `Nexus API` downloader
+
+## PLANNED
+- `pak` mod type
+- `profile` management

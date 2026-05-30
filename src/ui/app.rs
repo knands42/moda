@@ -223,8 +223,11 @@ impl eframe::App for ModaApp {
                 if let Some(state) = self.path_dialog.take() {
                     let path = PathBuf::from(&state.path);
                     if path.exists() && path.is_dir() {
-                        match ActiveGame::create(state.descriptor, path, &self.config) {
+                        match ActiveGame::create(state.descriptor, path.clone(), &self.config) {
                             Ok(active) => {
+                                self.config
+                                    .write_new_game_path(state.descriptor.registry_id, path);
+
                                 self.active_game = Some(active);
                                 self.page = Page::ModManager;
                                 self.error = None;
