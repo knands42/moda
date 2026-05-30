@@ -1,10 +1,10 @@
+mod mad_max;
 mod marvel_rivals;
 mod stardew;
-mod mad_max;
 
+pub use mad_max::MadMax;
 pub use marvel_rivals::MarvelRivals;
 pub use stardew::StardewValley;
-pub use mad_max::MadMax;
 
 use crate::config::Config;
 use crate::error::ModManagerError;

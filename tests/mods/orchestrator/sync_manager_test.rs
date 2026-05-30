@@ -1,7 +1,7 @@
 use crate::mods::test_util::{create_zip, make_config};
 use moda::games::StardewValley;
-use moda::mods::catalog::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
-use moda::mods::{ModState, SyncManager};
+use moda::mods::catalog::{ModEntry, ModStatus, ReconciledMod};
+use moda::mods::{ModEntryKind, ModState, SyncManager};
 use std::fs;
 use tempfile::TempDir;
 
@@ -31,8 +31,16 @@ fn test_stage_mods_empty_folder() {
 fn test_stage_one_mod_zip() {
     // Given: a flat zip (no wrapping dir) in the source folder
     let temp = TempDir::new().unwrap();
-    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
 
     let zip_path = mods_path.join("SomeMod.zip");
@@ -76,8 +84,16 @@ fn test_stage_one_mod_zip() {
 fn test_stage_one_mod_zip_with_wrap_directory() {
     // Given: a zip with a wrapping top-level directory (WrapDir/)
     let temp = TempDir::new().unwrap();
-    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
 
     let zip_path = mods_path.join("SomeMod.zip");
@@ -127,8 +143,16 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
 fn test_stage_mods_with_mods() {
     // Given: multiple directory mods in the source folder with tracked state
     let temp = TempDir::new().unwrap();
-    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
 
     fs::create_dir(mods_path.join("ModA")).unwrap();
@@ -200,7 +224,11 @@ fn test_enable_mods_empty_staging() {
 fn test_enable_one_mod_source_not_found() {
     // Given: a mod entry pointing to a non-existent staging path
     let temp = TempDir::new().unwrap();
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     let game_path = temp.path().join("game");
 
     let config = make_config(&temp);
@@ -227,7 +255,11 @@ fn test_enable_one_mod_source_not_found() {
 fn test_enable_mods_with_mods() {
     // Given: multiple staged mods in the staging folder
     let temp = TempDir::new().unwrap();
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     let game_path = temp.path().join("game");
 
     fs::create_dir_all(&staging_path).unwrap();
@@ -284,7 +316,11 @@ fn test_enable_mods_with_mods() {
 fn test_unstage_one_mod_nonexistent_path() {
     // Given: a mod entry whose staging path does not exist on disk
     let temp = TempDir::new().unwrap();
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
 
     let config = make_config(&temp);
 
@@ -311,8 +347,16 @@ fn test_unstage_mods_batch() {
     // Given: four mods — one staged with source, one staged without source,
     //        one enabled with source and staging, one downloaded
     let temp = TempDir::new().unwrap();
-    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     let game_path = temp.path().join("game");
 
     fs::create_dir_all(&mods_path).unwrap();
@@ -440,8 +484,16 @@ fn test_unstage_mods_batch() {
 fn test_disable_one_mod_not_in_staging_but_in_downloads() {
     // Given: an enabled mod symlinked directly from source (no staging)
     let temp = TempDir::new().unwrap();
-    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     let game_path = temp.path().join("game");
 
     fs::create_dir_all(&mods_path).unwrap();
@@ -498,7 +550,11 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
 fn test_disable_one_mod_only_in_game_mods() {
     // Given: an orphan enabled mod (game symlink with no source or staging)
     let temp = TempDir::new().unwrap();
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     let game_path = temp.path().join("game");
 
     let orphan_target = temp.path().join("orphan_mod");
@@ -571,7 +627,11 @@ fn test_disable_one_mod_nonexistent_game_mod() {
 fn test_disable_mods_batch() {
     // Given: multiple enabled mods with symlinks in the game mods folder
     let temp = TempDir::new().unwrap();
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
     let game_path = temp.path().join("game");
 
     fs::create_dir_all(&staging_path).unwrap();
@@ -651,8 +711,16 @@ fn test_sync_all_multiple_statuses() {
     // Given: three mods in different states — Downloaded, Staged, Enabled
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game");
-    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
-    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
 
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir(mods_path.join("ModA")).unwrap();

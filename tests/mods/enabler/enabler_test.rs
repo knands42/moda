@@ -1,5 +1,5 @@
-use moda::mods::enabler::Enabler;
 use moda::error::ModManagerError;
+use moda::mods::enabler::Enabler;
 use moda::mods::SymlinkEnabler;
 use std::fs;
 use tempfile::TempDir;

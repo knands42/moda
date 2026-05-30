@@ -1,28 +1,28 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
-use crate::mods::catalog::{Catalog, ModEntry, ModEntryKind, ModStatus};
+use crate::mods::catalog::{Catalog, ModEntry, ModStatus};
+use crate::mods::enabler::Enabler;
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
-use crate::mods::{SymlinkEnabler, Installer, ModSource};
+use crate::mods::{Installer, ModEntryKind, ModSource, SymlinkEnabler};
 use std::path::{Path, PathBuf};
-use crate::mods::enabler::Enabler;
 
 pub struct SyncManager<G: Game> {
     pub(super) game: G,
     config: Config,
-    mod_registry: Catalog,
+    catalog: Catalog,
 }
 
 impl<G: Game> SyncManager<G> {
     pub fn new(game: G, config: Config) -> Self {
         let descriptor = game.descriptor();
-        let mod_registry = Catalog::new(config.clone(), descriptor.registry_id);
+        let catalog = Catalog::new(config.clone(), descriptor.registry_id);
         log::debug!("SyncManager created for game: {}", descriptor.name);
         Self {
             game,
             config,
-            mod_registry,
+            catalog,
         }
     }
 }
@@ -36,7 +36,6 @@ impl<G: Game> SyncManager<G> {
                     self.stage_one_mod(downloaded_mod, state)?
                 } else {
                     log::warn!("Mod {} doesnt have a source folder", m.name);
-                    // TODO: reconcile?
                 }
             }
         }
@@ -95,7 +94,6 @@ impl<G: Game> SyncManager<G> {
                     self.unstage_one_mod(staged_mod, state)?
                 } else {
                     log::warn!("Mod {} doesnt have a staging folder", m.name);
-                    // TODO: reconcile?
                 }
             }
         }
@@ -130,7 +128,6 @@ impl<G: Game> SyncManager<G> {
                     self.enable_one_mod(staged_mod, state)?
                 } else {
                     log::warn!("Mod {} doesnt have a staging folder", m.name);
-                    // TODO: reconcile?
                 }
             }
         }
@@ -167,7 +164,6 @@ impl<G: Game> SyncManager<G> {
                     self.disable_one_mod(staged_mod, state)?
                 } else {
                     log::warn!("Mod {} doesnt have a staging folder", m.name);
-                    // TODO: reconcile?
                 }
             }
         }
@@ -193,7 +189,7 @@ impl<G: Game> SyncManager<G> {
 impl<G: Game> SyncManager<G> {
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mod state from {}", game_mod_path.display());
-        let state = self.mod_registry.reconcile(game_mod_path)?;
+        let state = self.catalog.reconcile(game_mod_path)?;
         let count = state.snapshot().len();
         log::info!("Reconcile complete: {} mods found", count);
         Ok(state)

@@ -64,7 +64,8 @@ impl ActiveGame {
     }
 
     pub fn unstage_one_mod(&mut self, mod_entry: &ModEntry) -> Result<(), ModManagerError> {
-        self.sync_manager.unstage_one_mod(mod_entry, &mut self.state)
+        self.sync_manager
+            .unstage_one_mod(mod_entry, &mut self.state)
     }
 
     pub fn enable_one_mod(&mut self, mod_entry: &ModEntry) -> Result<(), ModManagerError> {
@@ -72,7 +73,8 @@ impl ActiveGame {
     }
 
     pub fn disable_one_mod(&mut self, mod_entry: &ModEntry) -> Result<(), ModManagerError> {
-        self.sync_manager.disable_one_mod(mod_entry, &mut self.state)
+        self.sync_manager
+            .disable_one_mod(mod_entry, &mut self.state)
     }
 
     pub fn state(&self) -> &ModState {

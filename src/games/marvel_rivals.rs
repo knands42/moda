@@ -58,7 +58,10 @@ impl Game for MarvelRivals {
     fn pre_setup(&self) -> Result<(), ModManagerError> {
         let target_dir = self.game_path.join("MarvelGame/Marvel/Binaries/Win64");
 
-        if target_dir.join("plugins/MarvelRivalsUTOCSignatureBypass.asi").exists() {
+        if target_dir
+            .join("plugins/MarvelRivalsUTOCSignatureBypass.asi")
+            .exists()
+        {
             log::info!("UTOC signature bypass already installed");
             return Ok(());
         }

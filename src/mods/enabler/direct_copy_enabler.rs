@@ -1,6 +1,6 @@
-use std::path::Path;
 use crate::error::ModManagerError;
 use crate::mods::enabler::Enabler;
+use std::path::Path;
 
 pub struct DirectCopyEnabler;
 

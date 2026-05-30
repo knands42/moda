@@ -1,6 +1,6 @@
 use crate::error::ModManagerError;
-use std::path::Path;
 use crate::mods::enabler::Enabler;
+use std::path::Path;
 
 pub struct SymlinkEnabler;
 

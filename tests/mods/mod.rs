@@ -1,6 +1,6 @@
 mod downloader;
 mod enabler;
 mod installer_test;
-mod mod_registry_test;
-mod sync_manager_test;
+mod catalog_test;
+mod orchestrator;
 mod test_util;

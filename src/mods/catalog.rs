@@ -2,8 +2,9 @@ use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::mods::installer::strip_zip_ext;
 use crate::mods::mod_state::ModState;
-use crate::mods::Installer;
+use crate::mods::{allowed_extensions, Installer, ModEntryKind};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -34,18 +35,12 @@ pub struct ReconciledMod {
     pub game_entry: Option<ModEntry>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ModEntryKind {
-    Directory,
-    ZipArchive,
-    Other,
-}
-
 pub struct Catalog {
     config: Config,
     registry_id: &'static str,
 }
 
+// TODO: store on a sqlite db
 impl Catalog {
     pub fn new(config: Config, registry_id: &'static str) -> Self {
         log::debug!("ModRegistry created for game: {}", registry_id);
@@ -59,7 +54,7 @@ impl Catalog {
         log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;
         let staged_mods = self.list_staging_folder()?;
-        let enabled_mods = self.list_game_mods_folder(game_mod_path)?;
+        let enabled_mods = self.list_game_mods_folder(game_mod_path)?; // TODO: how to track direct_copy files on the game folder (cant rely on catalog if I need to reconcile)
 
         // Map effective name → source entry
         let src_by_name: HashMap<String, ModEntry> = source_mods
@@ -75,6 +70,7 @@ impl Catalog {
             .map(|m| (m.name.clone(), m.clone()))
             .collect();
 
+        // Centralized list of all mods
         let mut names: Vec<String> = src_by_name.keys().cloned().collect();
         for map in [&stg_by_name, &ena_by_name] {
             for name in map.keys() {
@@ -184,7 +180,7 @@ impl Catalog {
                 .into_string()
                 .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
 
-            if entry.path().extension().is_some_and(|ext| ext == "zip") {
+            if entry.path().extension().and_then(OsStr::to_str).is_some_and(|s| allowed_extensions().contains(&s)) {
                 entries.push(ModEntry {
                     name,
                     path: entry.path(),
@@ -198,6 +194,8 @@ impl Catalog {
                     kind: ModEntryKind::Directory,
                     metadata: None,
                 });
+            } else {
+                log::warn!("Mod {} uses an unsupported file extension: Skipping unsupported file: {}", name, entry.path().display());
             }
         }
 
@@ -221,3 +219,4 @@ fn is_newer(a: &Path, b: &Path) -> bool {
     let b_mt = fs::metadata(b).ok().and_then(|m| m.modified().ok());
     a_mt.zip(b_mt).is_some_and(|(a, b)| a > b)
 }
+

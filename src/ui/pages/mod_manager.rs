@@ -1,5 +1,6 @@
 use crate::games::ModMode;
-use crate::mods::catalog::{ModEntry, ModEntryKind, ModStatus};
+use crate::mods::catalog::{ModEntry, ModStatus};
+use crate::mods::ModEntryKind;
 use crate::ui::active_game::ActiveGame;
 
 use super::super::style;
@@ -215,7 +216,11 @@ fn render_staging_tab(ui: &mut egui::Ui, active_game: &mut ActiveGame, error: &m
     };
 
     ui.horizontal(|ui| {
-        ui.label(egui::RichText::new("Mode:").size(12.0).color(style::TEXT_MUTED));
+        ui.label(
+            egui::RichText::new("Mode:")
+                .size(12.0)
+                .color(style::TEXT_MUTED),
+        );
         ui.label(
             egui::RichText::new(mode_label)
                 .size(12.0)
