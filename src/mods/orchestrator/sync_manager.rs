@@ -65,9 +65,9 @@ impl<G: Game> SyncManager<G> {
             }
             ModEntryKind::ZipArchive => {
                 let (staging_name, target) =
-                    match ZipInstaller::get_mod_name_from_installer(&mod_entry.path)? {
-                        Some(dir) => (dir, staging_path.clone()),
-                        None => {
+                    match ZipInstaller::get_mod_name_from_installer(&mod_entry.path) {
+                        Ok(dir) => (dir, staging_path.clone()),
+                        Err(_) => {
                             let name = strip_zip_ext(&mod_entry.name);
                             (name.clone(), staging_path.join(&name))
                         }

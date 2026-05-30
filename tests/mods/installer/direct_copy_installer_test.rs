@@ -70,9 +70,7 @@ fn test_get_mod_name_folder_returns_name() {
     let temp = tempdir().unwrap();
     let path = temp.path().join("anything");
 
-    let result = DirectCopyInstaller::get_mod_name_from_installer(&path)
-        .unwrap()
-        .unwrap();
+    let result = DirectCopyInstaller::get_mod_name_from_installer(&path).unwrap();
 
     assert_eq!(result, "anything");
 }
@@ -82,9 +80,7 @@ fn test_get_mod_name_multiple_path_components() {
     let temp = tempdir().unwrap();
     let path = temp.path().join("/mods/anything");
 
-    let result = DirectCopyInstaller::get_mod_name_from_installer(&path)
-        .unwrap()
-        .unwrap();
+    let result = DirectCopyInstaller::get_mod_name_from_installer(&path).unwrap();
 
     assert_eq!(result, "anything");
 }

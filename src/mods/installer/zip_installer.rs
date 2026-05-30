@@ -15,7 +15,7 @@ pub struct ZipInstaller;
 impl Installer for ZipInstaller {
     /// Checks if a zip wraps its content in a single top-level directory.
     /// Returns `Some(dir_name)` if it wraps, `None` if files are scattered at root.
-    fn get_mod_name_from_installer(zip_path: &Path) -> Result<Option<String>, ModManagerError> {
+    fn get_mod_name_from_installer(zip_path: &Path) -> Result<String, ModManagerError> {
         let file = File::open(zip_path)?;
         let mut archive = ZipArchive::new(file)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
@@ -43,14 +43,16 @@ impl Installer for ZipInstaller {
             }
         }
 
-        let result = if top_names.len() == 1 && has_subdir {
-            Some(top_names[0].clone())
+        if top_names.len() == 1 && has_subdir {
+            let result = top_names[0].clone();
+            log::debug!("Zip wrap analysis for {}: {:?}", zip_path.display(), result);
+            Ok(result)
         } else {
-            None
-        };
-
-        log::debug!("Zip wrap analysis for {}: {:?}", zip_path.display(), result);
-        Ok(result)
+            Err(ModManagerError::InvalidMod(format!(
+                "Zip {} does not have a single wrapping directory",
+                zip_path.display()
+            )))
+        }
     }
 
     fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {

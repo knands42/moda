@@ -81,7 +81,7 @@ fn test_zip_wrap_directory_single_wrapping_dir() {
     let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
 
     // Then: it returns the wrapping directory name
-    assert_eq!(result, Some("SomeMod".to_string()));
+    assert_eq!(result, "SomeMod");
 }
 
 #[test]
@@ -100,10 +100,10 @@ fn test_zip_wrap_directory_files_at_root() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
+    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
 
-    // Then: it returns None (no single wrapping directory)
-    assert_eq!(result, None);
+    // Then: it returns an error (no single wrapping directory)
+    assert!(result.is_err());
 }
 
 #[test]
@@ -119,10 +119,10 @@ fn test_zip_wrap_directory_single_file_at_root() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
+    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
 
-    // Then: it returns None (single file at root is not a wrap dir)
-    assert_eq!(result, None);
+    // Then: it returns an error (single file at root is not a wrap dir)
+    assert!(result.is_err());
 }
 
 #[test]
@@ -141,10 +141,10 @@ fn test_zip_wrap_directory_multiple_top_level_dirs() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
+    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
 
-    // Then: it returns None (multiple top-level dirs)
-    assert_eq!(result, None);
+    // Then: it returns an error (multiple top-level dirs)
+    assert!(result.is_err());
 }
 
 #[test]
@@ -169,7 +169,7 @@ fn test_zip_wrap_directory_nested_single_dir() {
     let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
 
     // Then: it returns the top-level wrapping directory name
-    assert_eq!(result, Some("SomeMod-1.0.0".to_string()));
+    assert_eq!(result, "SomeMod-1.0.0");
 }
 
 #[test]

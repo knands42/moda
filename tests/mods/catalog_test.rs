@@ -39,6 +39,7 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
 
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
+
     let result = catalog.reconcile(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);

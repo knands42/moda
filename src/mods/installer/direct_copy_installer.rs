@@ -6,8 +6,12 @@ use std::path::Path;
 pub struct DirectCopyInstaller;
 
 impl Installer for DirectCopyInstaller {
-    fn get_mod_name_from_installer(path: &Path) -> Result<Option<String>, ModManagerError> {
-        Ok(path.file_name().map(|n| n.to_string_lossy().to_string()))
+    fn get_mod_name_from_installer(path: &Path) -> Result<String, ModManagerError> {
+        path.file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .ok_or_else(|| {
+                ModManagerError::InvalidMod(format!("Path has no file name: {}", path.display()))
+            })
     }
 
     fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {

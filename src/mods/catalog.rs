@@ -214,10 +214,8 @@ impl Catalog {
 
 fn effective_name(entry: &ModEntry) -> String {
     if entry.kind == ModEntryKind::ZipArchive {
-        match ZipInstaller::get_mod_name_from_installer(&entry.path) {
-            Ok(Some(dir)) => dir,
-            _ => strip_zip_ext(&entry.name),
-        }
+        ZipInstaller::get_mod_name_from_installer(&entry.path)
+            .unwrap_or_else(|_| strip_zip_ext(&entry.name))
     } else {
         entry.name.clone()
     }
