@@ -3,7 +3,14 @@ use moda::games::StardewValley;
 use moda::mods::catalog::{ModEntry, ModStatus, ReconciledMod};
 use moda::mods::{ModEntryKind, ModState, SyncManager};
 use std::fs;
+use std::path::PathBuf;
 use tempfile::TempDir;
+
+fn make_game(game_path: PathBuf) -> StardewValley {
+    fs::create_dir_all(&game_path).unwrap();
+    fs::write(game_path.join("SMAPI.ZipInstaller.dll"), "").unwrap();
+    StardewValley::new(game_path)
+}
 
 fn reconciled_mods_from_vec(mods: Vec<ReconciledMod>) -> ModState {
     let mods = mods.into_iter().map(|m| (m.name.clone(), m)).collect();
@@ -16,7 +23,7 @@ fn test_stage_mods_empty_folder() {
     let temp = TempDir::new().unwrap();
     let config = make_config(&temp);
 
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
@@ -48,7 +55,7 @@ fn test_stage_one_mod_zip() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![ReconciledMod {
         name: "SomeMod".to_string(),
@@ -101,7 +108,7 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
     // State as reconcile would produce: effective name is the wrapping dir name
     let mut state = reconciled_mods_from_vec(vec![ReconciledMod {
@@ -161,7 +168,7 @@ fn test_stage_mods_with_mods() {
     fs::write(mods_path.join("ModB").join("b.txt"), "b").unwrap();
 
     let config = make_config(&temp);
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![
         ReconciledMod {
@@ -209,7 +216,7 @@ fn test_enable_mods_empty_staging() {
     let temp = TempDir::new().unwrap();
     let config = make_config(&temp);
 
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
@@ -233,7 +240,7 @@ fn test_enable_one_mod_source_not_found() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
@@ -270,7 +277,7 @@ fn test_enable_mods_with_mods() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![
         ReconciledMod {
@@ -324,7 +331,7 @@ fn test_unstage_one_mod_nonexistent_path() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(temp.path().join("game"));
+    let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
@@ -384,7 +391,7 @@ fn test_unstage_mods_batch() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![
         ReconciledMod {
@@ -509,7 +516,7 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![ReconciledMod {
         name: "SomeMod".to_string(),
@@ -565,7 +572,7 @@ fn test_disable_one_mod_only_in_game_mods() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![ReconciledMod {
         name: "SomeMod".to_string(),
@@ -604,7 +611,7 @@ fn test_disable_one_mod_nonexistent_game_mod() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = ModState::default();
 
@@ -654,7 +661,7 @@ fn test_disable_mods_batch() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
     let mut state = reconciled_mods_from_vec(vec![
         ReconciledMod {
@@ -741,7 +748,7 @@ fn test_sync_all_multiple_statuses() {
 
     let config = make_config(&temp);
 
-    let game = StardewValley::new(game_path.clone());
+    let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
 
     let mut state = reconciled_mods_from_vec(vec![
