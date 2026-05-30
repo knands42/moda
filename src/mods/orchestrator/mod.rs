@@ -1,6 +1,6 @@
 use crate::error::ModManagerError;
 use crate::games::Game;
-use crate::mods::catalog::ModEntry;
+use crate::mods::types::ModEntry;
 use crate::mods::ModState;
 use std::path::PathBuf;
 

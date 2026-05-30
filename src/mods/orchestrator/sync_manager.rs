@@ -1,11 +1,12 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
-use crate::mods::catalog::{Catalog, ModEntry, ModStatus};
+use crate::mods::catalog::{Catalog, ModStatus};
 use crate::mods::enabler::Enabler;
-use crate::mods::installer::Installer;
 use crate::mods::mod_state::ModState;
-use crate::mods::{strip_zip_ext, DirectCopyInstaller, ModEntryKind, SymlinkEnabler, ZipInstaller};
+use crate::mods::stager::Stager;
+use crate::mods::types::ModEntry;
+use crate::mods::{DirectCopyStager, SymlinkEnabler};
 use std::path::{Path, PathBuf};
 
 pub struct SyncManager<G: Game> {
@@ -35,55 +36,9 @@ impl<G: Game> SyncManager<G> {
     ) -> Result<(), ModManagerError> {
         let staging_path = self.get_staging_path();
         log::info!("Staging mod: {}", mod_entry.name);
-        match mod_entry.kind {
-            ModEntryKind::Directory => {
-                let target = staging_path.join(&mod_entry.name);
-                DirectCopyInstaller::install(mod_entry.path.clone().as_path(), &target)?;
-                let staging_entry = ModEntry {
-                    name: mod_entry.name.clone(),
-                    path: target,
-                    kind: ModEntryKind::Directory,
-                    metadata: None,
-                };
-                state.set_staged(&staging_entry);
-            }
-            ModEntryKind::ZipArchive => {
-                let (staging_name, target) =
-                    match ZipInstaller::get_mod_name_from_installer(&mod_entry.path) {
-                        Ok(dir) => (dir, staging_path.clone()),
-                        Err(_) => {
-                            let name = strip_zip_ext(&mod_entry.name);
-                            (name.clone(), staging_path.join(&name))
-                        }
-                    };
-                ZipInstaller::install(&mod_entry.path, &target)?;
-                let staging_entry = ModEntry {
-                    name: staging_name.clone(),
-                    path: staging_path.join(&staging_name),
-                    kind: ModEntryKind::Directory,
-                    metadata: None,
-                };
-                state.set_staged(&staging_entry);
-            }
-            _ => {}
+        if let Some(staging_entry) = mod_entry.kind.stage(mod_entry, &staging_path)? {
+            state.set_staged(&staging_entry);
         }
-
-        Ok(())
-    }
-
-    pub fn unstage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
-        log::info!("Unstaging all mods");
-
-        for m in state.snapshot() {
-            if m.status == ModStatus::Staged || m.status == ModStatus::Enabled {
-                if let Some(staged_mod) = m.staging_entry.as_ref() {
-                    self.unstage_one_mod(staged_mod, state)?
-                } else {
-                    log::warn!("Mod {} doesnt have a staging folder", m.name);
-                }
-            }
-        }
-
         Ok(())
     }
 
@@ -96,7 +51,7 @@ impl<G: Game> SyncManager<G> {
         let _ = SymlinkEnabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
 
         if mod_entry.path.exists() {
-            DirectCopyInstaller::uninstall(&mod_entry.path)?;
+            DirectCopyStager::uninstall(&mod_entry.path)?;
         }
 
         self.resolve_after_unstage(mod_entry, state);
@@ -117,7 +72,6 @@ impl<G: Game> SyncManager<G> {
 
         Ok(())
     }
-
 }
 
 impl<G: Game> SyncManager<G> {
@@ -127,17 +81,37 @@ impl<G: Game> SyncManager<G> {
         state: &mut ModState,
     ) -> Result<(), ModManagerError> {
         log::info!("Enabling mod: {}", mod_entry.name);
-        let game_mods_path = self.game.game_mod_path();
-        let game_entry_path = game_mods_path.join(&mod_entry.name);
-        SymlinkEnabler::activate(mod_entry.path.as_path(), game_entry_path.as_path())?;
-
-        let game_entry = ModEntry {
-            name: mod_entry.name.clone(),
-            path: game_entry_path,
-            kind: ModEntryKind::Directory,
-            metadata: None,
-        };
+        let game_entry = SymlinkEnabler::enable(mod_entry, &self.game.game_mod_path())?;
         state.set_enabled(&game_entry);
+        Ok(())
+    }
+
+    pub fn disable_one_mod(
+        &self,
+        mod_entry: &ModEntry,
+        state: &mut ModState,
+    ) -> Result<(), ModManagerError> {
+        log::info!("Disabling mod: {}", mod_entry.name);
+        if mod_entry.path.exists() {
+            SymlinkEnabler::disable(mod_entry)?;
+        }
+        self.resolve_after_disable(mod_entry, state)?;
+        Ok(())
+    }
+
+    pub fn unstage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Unstaging all mods");
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Staged || m.status == ModStatus::Enabled {
+                if let Some(staged_mod) = m.staging_entry.as_ref() {
+                    self.unstage_one_mod(staged_mod, state)?
+                } else {
+                    log::warn!("Mod {} doesnt have a staging folder", m.name);
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -157,19 +131,6 @@ impl<G: Game> SyncManager<G> {
         Ok(())
     }
 
-    pub fn disable_one_mod(
-        &self,
-        mod_entry: &ModEntry,
-        state: &mut ModState,
-    ) -> Result<(), ModManagerError> {
-        log::info!("Disabling mod: {}", mod_entry.name);
-        if mod_entry.path.exists() {
-            SymlinkEnabler::deactivate(&mod_entry.path)?;
-        }
-
-        self.resolve_after_disable(mod_entry, state)?;
-        Ok(())
-    }
     fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Enabling all staged mods");
 
@@ -196,7 +157,6 @@ impl<G: Game> SyncManager<G> {
         Ok(state)
     }
 
-    // TODO: Make it handle Modified
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Sync all started");
 

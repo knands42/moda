@@ -1,4 +1,4 @@
-use moda::mods::{strip_zip_ext, Installer, ZipInstaller};
+use moda::mods::stager::{strip_zip_ext, Stager, ZipStager};
 use std::fs::File;
 use std::io::Write;
 use tempfile::tempdir;
@@ -28,7 +28,7 @@ fn test_install_from_zip() {
     zip_writer.finish().unwrap();
 
     // When: installing from the zip
-    ZipInstaller::install(&zip_path, &target_dir).unwrap();
+    ZipStager::install(&zip_path, &target_dir).unwrap();
 
     // Then: files are extracted to the correct locations
     assert!(target_dir.join("mod.txt").exists());
@@ -78,7 +78,7 @@ fn test_zip_wrap_directory_single_wrapping_dir() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
+    let result = ZipStager::get_mod_name(&zip_path).unwrap();
 
     // Then: it returns the wrapping directory name
     assert_eq!(result, "SomeMod");
@@ -100,7 +100,7 @@ fn test_zip_wrap_directory_files_at_root() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
+    let result = ZipStager::get_mod_name(&zip_path);
 
     // Then: it returns an error (no single wrapping directory)
     assert!(result.is_err());
@@ -119,7 +119,7 @@ fn test_zip_wrap_directory_single_file_at_root() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
+    let result = ZipStager::get_mod_name(&zip_path);
 
     // Then: it returns an error (single file at root is not a wrap dir)
     assert!(result.is_err());
@@ -141,7 +141,7 @@ fn test_zip_wrap_directory_multiple_top_level_dirs() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
+    let result = ZipStager::get_mod_name(&zip_path);
 
     // Then: it returns an error (multiple top-level dirs)
     assert!(result.is_err());
@@ -166,7 +166,7 @@ fn test_zip_wrap_directory_nested_single_dir() {
     zip_writer.finish().unwrap();
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path).unwrap();
+    let result = ZipStager::get_mod_name(&zip_path).unwrap();
 
     // Then: it returns the top-level wrapping directory name
     assert_eq!(result, "SomeMod-1.0.0");
@@ -179,7 +179,7 @@ fn test_zip_wrap_directory_invalid_path() {
     let zip_path = temp.path().join("nonexistent.zip");
 
     // When: checking for wrap directory
-    let result = ZipInstaller::get_mod_name_from_installer(&zip_path);
+    let result = ZipStager::get_mod_name(&zip_path);
 
     // Then: it returns an error
     assert!(result.is_err());

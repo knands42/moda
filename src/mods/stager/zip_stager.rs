@@ -1,5 +1,6 @@
 use crate::error::ModManagerError;
-use crate::mods::installer::Installer;
+use crate::mods::stager::Stager;
+use crate::mods::types::{ModEntry, ModEntryKind};
 use std::fs::File;
 use std::io;
 use std::path::Path;
@@ -10,12 +11,10 @@ pub fn strip_zip_ext(name: &str) -> String {
     name.strip_suffix(".zip").unwrap_or(name).to_string()
 }
 
-pub struct ZipInstaller;
+pub struct ZipStager;
 
-impl Installer for ZipInstaller {
-    /// Checks if a zip wraps its content in a single top-level directory.
-    /// Returns `Some(dir_name)` if it wraps, `None` if files are scattered at root.
-    fn get_mod_name_from_installer(zip_path: &Path) -> Result<String, ModManagerError> {
+impl Stager for ZipStager {
+    fn get_mod_name(zip_path: &Path) -> Result<String, ModManagerError> {
         let file = File::open(zip_path)?;
         let mut archive = ZipArchive::new(file)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
@@ -70,9 +69,26 @@ impl Installer for ZipInstaller {
     fn uninstall(_file_path: &Path) -> Result<(), ModManagerError> {
         todo!()
     }
+
+    fn stage(entry: &ModEntry, staging_path: &Path) -> Result<ModEntry, ModManagerError> {
+        let (name, target) = match Self::get_mod_name(&entry.path) {
+            Ok(dir) => (dir, staging_path.to_path_buf()),
+            Err(_) => {
+                let name = strip_zip_ext(&entry.name);
+                (name.clone(), staging_path.join(&name))
+            }
+        };
+        Self::install(&entry.path, &target)?;
+        Ok(ModEntry {
+            name: name.clone(),
+            path: staging_path.join(&name),
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        })
+    }
 }
 
-impl ZipInstaller {
+impl ZipStager {
     fn install_from_zip(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
         let file = File::open(file_path)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;

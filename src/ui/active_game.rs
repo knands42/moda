@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::{Game, GameDescriptor, ModMode};
-use crate::mods::catalog::ModEntry;
+use crate::mods::types::ModEntry;
 use crate::mods::ModState;
 use crate::mods::SyncManagerOps;
 

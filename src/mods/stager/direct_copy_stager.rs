@@ -1,12 +1,12 @@
 use crate::error::ModManagerError;
-use crate::mods::installer::Installer;
+use crate::mods::stager::Stager;
 use std::io;
 use std::path::Path;
 
-pub struct DirectCopyInstaller;
+pub struct DirectCopyStager;
 
-impl Installer for DirectCopyInstaller {
-    fn get_mod_name_from_installer(path: &Path) -> Result<String, ModManagerError> {
+impl Stager for DirectCopyStager {
+    fn get_mod_name(path: &Path) -> Result<String, ModManagerError> {
         path.file_name()
             .map(|n| n.to_string_lossy().to_string())
             .ok_or_else(|| {
@@ -23,7 +23,7 @@ impl Installer for DirectCopyInstaller {
         Self::copy_dir_recursive(source, target)
     }
 
-    fn uninstall(file_path: &Path) -> Result<(), crate::error::ModManagerError> {
+    fn uninstall(file_path: &Path) -> Result<(), ModManagerError> {
         match std::fs::remove_dir_all(file_path) {
             Ok(_) => {
                 log::info!("Uninstalled {}", file_path.display());
@@ -38,7 +38,7 @@ impl Installer for DirectCopyInstaller {
     }
 }
 
-impl DirectCopyInstaller {
+impl DirectCopyStager {
     fn copy_dir_recursive(folder_src: &Path, folder_dst: &Path) -> Result<(), ModManagerError> {
         std::fs::create_dir_all(folder_dst)?;
 

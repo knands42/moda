@@ -1,22 +1,12 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
-use crate::mods::installer::{strip_zip_ext, Installer};
 use crate::mods::mod_state::ModState;
-use crate::mods::{allowed_extensions, ModEntryKind, ZipInstaller};
+use crate::mods::stager::{strip_zip_ext, Stager, ZipStager};
+use crate::mods::types::{allowed_extensions, ModEntry, ModEntryKind};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-#[derive(Clone, Debug)]
-pub struct ModMetadata {}
-#[derive(Clone, Debug)]
-pub struct ModEntry {
-    pub name: String,
-    pub path: PathBuf,
-    pub kind: ModEntryKind,
-    pub metadata: Option<ModMetadata>,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModStatus {
@@ -214,8 +204,7 @@ impl Catalog {
 
 fn effective_name(entry: &ModEntry) -> String {
     if entry.kind == ModEntryKind::ZipArchive {
-        ZipInstaller::get_mod_name_from_installer(&entry.path)
-            .unwrap_or_else(|_| strip_zip_ext(&entry.name))
+        ZipStager::get_mod_name(&entry.path).unwrap_or_else(|_| strip_zip_ext(&entry.name))
     } else {
         entry.name.clone()
     }

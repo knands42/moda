@@ -1,4 +1,4 @@
-use moda::mods::{DirectCopyInstaller, Installer};
+use moda::mods::stager::{DirectCopyStager, Stager};
 use tempfile::tempdir;
 
 #[test]
@@ -21,7 +21,7 @@ fn test_install_from_dir() {
     let target_dir = temp.path().join("target");
     std::fs::create_dir(&target_dir).unwrap();
 
-    DirectCopyInstaller::install(&source_dir, &target_dir).unwrap();
+    DirectCopyStager::install(&source_dir, &target_dir).unwrap();
 
     assert!(target_dir.join("mod1.txt").exists());
     assert!(target_dir.join("subfolder").is_dir());
@@ -50,7 +50,7 @@ fn test_uninstall_removes_directory() {
     std::fs::create_dir(&dir).unwrap();
     std::fs::write(dir.join("file.txt"), "data").unwrap();
 
-    DirectCopyInstaller::uninstall(&dir).unwrap();
+    DirectCopyStager::uninstall(&dir).unwrap();
 
     assert!(!dir.exists());
 }
@@ -60,7 +60,7 @@ fn test_uninstall_not_found_does_not_error() {
     let temp = tempdir().unwrap();
     let dir = temp.path().join("nonexistent_mod");
 
-    let result = DirectCopyInstaller::uninstall(&dir);
+    let result = DirectCopyStager::uninstall(&dir);
 
     assert!(result.is_ok());
 }
@@ -70,7 +70,7 @@ fn test_get_mod_name_folder_returns_name() {
     let temp = tempdir().unwrap();
     let path = temp.path().join("anything");
 
-    let result = DirectCopyInstaller::get_mod_name_from_installer(&path).unwrap();
+    let result = DirectCopyStager::get_mod_name(&path).unwrap();
 
     assert_eq!(result, "anything");
 }
@@ -80,7 +80,7 @@ fn test_get_mod_name_multiple_path_components() {
     let temp = tempdir().unwrap();
     let path = temp.path().join("/mods/anything");
 
-    let result = DirectCopyInstaller::get_mod_name_from_installer(&path).unwrap();
+    let result = DirectCopyStager::get_mod_name(&path).unwrap();
 
     assert_eq!(result, "anything");
 }
