@@ -41,11 +41,16 @@ impl DirBrowser {
                 return;
             }
         };
-        self.entries.sort();
+        self.entries.sort_by_key(|e| {
+            e.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase()
+        });
         self.error = None;
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, on_select: &mut Option<PathBuf>) {
+    pub fn render(&mut self, ctx: &egui::Context, on_select: &mut Option<PathBuf>) {
         let mut open = true;
         egui::Window::new("Select Game Directory")
             .open(&mut open)

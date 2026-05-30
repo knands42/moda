@@ -249,7 +249,7 @@ impl eframe::App for ModaApp {
         }
 
         if self.dir_browser.visible {
-            self.dir_browser.show(ctx, &mut self.pending_select);
+            self.dir_browser.render(ctx, &mut self.pending_select);
             if let Some(selected) = self.pending_select.take() {
                 if let Some(ref mut state) = self.path_dialog {
                     state.path = selected.to_string_lossy().to_string();
