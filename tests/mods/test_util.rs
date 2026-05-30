@@ -1,18 +1,16 @@
 use moda::config::Config;
-use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use tempfile::TempDir;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-pub fn make_config(mods_root: &str, staging_root: &str) -> Config {
-    Config {
-        nexus_api_key: String::new(),
-        mods_root_path: mods_root.to_string(),
-        staging_root_path: staging_root.to_string(),
-        game_search_paths: HashMap::new(),
-    }
+pub fn make_config(tmp_dir: &TempDir) -> Config {
+    std::env::set_var("HOME", tmp_dir.path().to_str().unwrap());
+    let config = Config::new();
+
+    config
 }
 
 pub fn create_zip(path: &Path, entries: &[&str]) {

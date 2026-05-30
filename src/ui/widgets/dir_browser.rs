@@ -72,7 +72,7 @@ impl DirBrowser {
                 let resp = ui.add(
                     egui::TextEdit::singleline(&mut edit)
                         .font(egui::TextStyle::Monospace)
-                        .desired_width(f32::INFINITY),
+                        .desired_width(ui.available_width()),
                 );
                 if resp.changed() && !edit.is_empty() {
                     let new_path = PathBuf::from(&edit);

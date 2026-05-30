@@ -1,3 +1,4 @@
+use std::env::VarError;
 use std::io;
 use std::path::PathBuf;
 
@@ -48,5 +49,11 @@ pub type Result<T> = std::result::Result<T, ModManagerError>;
 impl From<io::Error> for ModManagerError {
     fn from(e: io::Error) -> Self {
         ModManagerError::IoError(e)
+    }
+}
+
+impl From<VarError> for ModManagerError {
+    fn from(e: VarError) -> Self {
+        ModManagerError::InvalidConfiguration(e.to_string())
     }
 }

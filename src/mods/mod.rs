@@ -1,6 +1,6 @@
 pub mod catalog;
 pub mod downloader;
-mod enabler;
+pub mod enabler;
 mod installer;
 mod mod_state;
 mod orchestrator;

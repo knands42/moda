@@ -1,8 +1,10 @@
 mod marvel_rivals;
 mod stardew;
+mod mad_max;
 
 pub use marvel_rivals::MarvelRivals;
 pub use stardew::StardewValley;
+pub use mad_max::MadMax;
 
 use crate::config::Config;
 use crate::error::ModManagerError;
@@ -51,6 +53,10 @@ fn construct_marvel_rivals(path: PathBuf, config: Config) -> Box<dyn SyncManager
     Box::new(SyncManager::new(MarvelRivals::new(path), config))
 }
 
+fn construct_mad_max(path: PathBuf, config: Config) -> Box<dyn SyncManagerOps> {
+    Box::new(SyncManager::new(MadMax::new(path), config))
+}
+
 pub static STARDEW_VALLEY: GameDescriptor = GameDescriptor {
     name: "Stardew Valley",
     registry_id: "stardew_valley",
@@ -67,7 +73,15 @@ pub static MARVEL_RIVALS: GameDescriptor = GameDescriptor {
     construct: construct_marvel_rivals,
 };
 
+pub static MAD_MAX: GameDescriptor = GameDescriptor {
+    name: "Mad Max: Fury Road",
+    registry_id: "mad_max",
+    description: "Open-world vehicular combat action-adventure set in a post-apocalyptic wasteland",
+    icon: "\u{1F480}\u{1F525}\u{1F697}", // 💀🔥🚗
+    construct: construct_mad_max,
+};
+
 pub fn registered_games() -> &'static [&'static GameDescriptor] {
-    static GAMES: &[&GameDescriptor] = &[&STARDEW_VALLEY, &MARVEL_RIVALS];
+    static GAMES: &[&GameDescriptor] = &[&STARDEW_VALLEY, &MAD_MAX];
     GAMES
 }

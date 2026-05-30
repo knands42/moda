@@ -41,16 +41,7 @@ impl Default for ModaApp {
 
 impl ModaApp {
     pub fn new() -> Self {
-        let config = Config::load_config().unwrap_or_else(|| {
-            let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
-            log::warn!("Failed to load config, using fallback defaults");
-            Config {
-                nexus_api_key: String::new(),
-                mods_root_path: format!("{}/.moda/mods", home),
-                staging_root_path: format!("{}/.moda/staging", home),
-                game_search_paths: std::collections::HashMap::new(),
-            }
-        });
+        let config = Config::new();
 
         Self {
             config,
@@ -150,7 +141,7 @@ impl eframe::App for ModaApp {
             let mut browse = false;
 
             egui::Window::new("Game Path Required")
-                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .anchor(egui::Align2::CENTER_CENTER, [100.0, 0.0])
                 .resizable(false)
                 .default_size([450.0, 200.0])
                 .show(ctx, |ui| {
@@ -255,6 +246,7 @@ impl eframe::App for ModaApp {
             if let Some(selected) = self.pending_select.take() {
                 if let Some(ref mut state) = self.path_dialog {
                     state.path = selected.to_string_lossy().to_string();
+                    self.config.write_new_game_path(state.descriptor.registry_id, selected);
                 }
             }
         }

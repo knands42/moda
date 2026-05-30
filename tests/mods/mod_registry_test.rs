@@ -8,10 +8,7 @@ use crate::mods::test_util::{create_zip, make_config};
 fn test_reconcile_empty() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
@@ -23,8 +20,8 @@ fn test_reconcile_empty() {
 fn test_reconcile_enabled_failed_if_not_symlink_mod() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
+    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
+    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir_all(&game_path).unwrap();
@@ -32,12 +29,8 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
     fs::create_dir(staging_path.join("SomeMod")).unwrap();
     fs::create_dir(game_path.join("SomeMod")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
-
     let result = catalog.reconcile(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
@@ -60,7 +53,7 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
 fn test_reconcile_zip_variants() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
+    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
 
     // Flat zip — files at root, effective name = strip_zip_ext
@@ -81,12 +74,8 @@ fn test_reconcile_zip_variants() {
         &["Mixed/mod.txt", "readme.md"],
     );
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
-
     let result = catalog.reconcile(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 4);
@@ -156,8 +145,8 @@ fn test_reconcile_zip_variants() {
 fn test_reconcile_multiple_mixed_states() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
+    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
+    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir_all(&game_path).unwrap();
@@ -171,10 +160,7 @@ fn test_reconcile_multiple_mixed_states() {
     fs::create_dir(staging_path.join("ModC")).unwrap();
     std::os::unix::fs::symlink(staging_path.join("ModC"), game_path.join("ModC")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
@@ -256,16 +242,13 @@ fn test_reconcile_multiple_mixed_states() {
 fn test_reconcile_enabled_mod_without_staging() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
+    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
     fs::create_dir_all(&mods_path).unwrap();
     fs::create_dir_all(&game_path).unwrap();
     fs::create_dir(mods_path.join("SomeMod")).unwrap();
     std::os::unix::fs::symlink(mods_path.join("SomeMod"), game_path.join("SomeMod")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
@@ -303,10 +286,7 @@ fn test_reconcile_orphan_enabled() {
     fs::create_dir_all(&game_path).unwrap();
     std::os::unix::fs::symlink(&orphan_target, game_path.join("SomeMod")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
@@ -330,14 +310,11 @@ fn test_reconcile_orphan_enabled() {
 fn test_reconcile_orphan_staged() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
+    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir(staging_path.join("SomeMod")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
@@ -364,8 +341,8 @@ fn test_reconcile_orphan_staged() {
 fn test_reconcile_modified() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let mods_path = temp.path().join("mods").join("stardew_valley");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
+    let mods_path = temp.path().join(".moda").join("mods").join("stardew_valley");
+    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
     fs::create_dir_all(&game_path).unwrap();
     fs::create_dir_all(&staging_path).unwrap();
 
@@ -388,10 +365,7 @@ fn test_reconcile_modified() {
 
     fs::create_dir(mods_path.join("ModB")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
     let result = catalog.reconcile(&game_path).unwrap();
@@ -458,18 +432,14 @@ fn test_reconcile_modified() {
 fn test_reconcile_enabled_with_staging_only_no_source() {
     let temp = TempDir::new().unwrap();
     let game_path = temp.path().join("game").join("Mods");
-    let staging_path = temp.path().join("staging").join("stardew_valley");
+    let staging_path = temp.path().join(".moda").join("staging").join("stardew_valley");
     fs::create_dir_all(&staging_path).unwrap();
     fs::create_dir_all(&game_path).unwrap();
     fs::create_dir(staging_path.join("SomeMod")).unwrap();
     std::os::unix::fs::symlink(staging_path.join("SomeMod"), game_path.join("SomeMod")).unwrap();
 
-    let config = make_config(
-        temp.path().join("mods").to_str().unwrap(),
-        temp.path().join("staging").to_str().unwrap(),
-    );
+    let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
-
     let result = catalog.reconcile(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
