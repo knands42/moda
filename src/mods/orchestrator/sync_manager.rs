@@ -3,9 +3,9 @@ use crate::error::ModManagerError;
 use crate::games::Game;
 use crate::mods::catalog::{Catalog, ModEntry, ModStatus};
 use crate::mods::enabler::Enabler;
-use crate::mods::installer::{strip_zip_ext, Installer};
+use crate::mods::installer::Installer;
 use crate::mods::mod_state::ModState;
-use crate::mods::{DirectCopyInstaller, ModEntryKind, SymlinkEnabler, ZipInstaller};
+use crate::mods::{strip_zip_ext, DirectCopyInstaller, ModEntryKind, SymlinkEnabler, ZipInstaller};
 use std::path::{Path, PathBuf};
 
 pub struct SyncManager<G: Game> {
@@ -28,22 +28,6 @@ impl<G: Game> SyncManager<G> {
 }
 
 impl<G: Game> SyncManager<G> {
-    pub fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
-        log::info!("Staging all mods");
-        for m in state.snapshot() {
-            if m.status == ModStatus::Downloaded {
-                if let Some(downloaded_mod) = m.source_entry.as_ref() {
-                    self.stage_one_mod(downloaded_mod, state)?
-                } else {
-                    log::warn!("Mod {} doesnt have a source folder", m.name);
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    // TODO: refactor this for more fily types
     pub fn stage_one_mod(
         &self,
         mod_entry: &ModEntry,
@@ -118,18 +102,15 @@ impl<G: Game> SyncManager<G> {
         self.resolve_after_unstage(mod_entry, state);
         Ok(())
     }
-}
 
-impl<G: Game> SyncManager<G> {
-    pub fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
-        log::info!("Enabling all staged mods");
-
+    fn stage_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Staging all mods");
         for m in state.snapshot() {
-            if m.status == ModStatus::Staged {
-                if let Some(staged_mod) = m.staging_entry.as_ref() {
-                    self.enable_one_mod(staged_mod, state)?
+            if m.status == ModStatus::Downloaded {
+                if let Some(downloaded_mod) = m.source_entry.as_ref() {
+                    self.stage_one_mod(downloaded_mod, state)?
                 } else {
-                    log::warn!("Mod {} doesnt have a staging folder", m.name);
+                    log::warn!("Mod {} doesnt have a source folder", m.name);
                 }
             }
         }
@@ -137,6 +118,9 @@ impl<G: Game> SyncManager<G> {
         Ok(())
     }
 
+}
+
+impl<G: Game> SyncManager<G> {
     pub fn enable_one_mod(
         &self,
         mod_entry: &ModEntry,
@@ -186,6 +170,21 @@ impl<G: Game> SyncManager<G> {
         self.resolve_after_disable(mod_entry, state)?;
         Ok(())
     }
+    fn enable_mods(&self, state: &mut ModState) -> Result<(), ModManagerError> {
+        log::info!("Enabling all staged mods");
+
+        for m in state.snapshot() {
+            if m.status == ModStatus::Staged {
+                if let Some(staged_mod) = m.staging_entry.as_ref() {
+                    self.enable_one_mod(staged_mod, state)?
+                } else {
+                    log::warn!("Mod {} doesnt have a staging folder", m.name);
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl<G: Game> SyncManager<G> {
@@ -200,24 +199,11 @@ impl<G: Game> SyncManager<G> {
     // TODO: Make it handle Modified
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Sync all started");
-        let mut staged = 0;
-        let mut enabled = 0;
 
-        for m in state.snapshot() {
-            if m.status == ModStatus::Downloaded {
-                self.stage_one_mod(m.source_entry.as_ref().unwrap(), state)?;
-                staged += 1;
-            }
-        }
+        self.stage_mods(state)?;
+        self.enable_mods(state)?;
 
-        for m in state.snapshot() {
-            if m.status == ModStatus::Staged {
-                self.enable_one_mod(m.staging_entry.as_ref().unwrap(), state)?;
-                enabled += 1;
-            }
-        }
-
-        log::info!("Sync all complete: staged={staged}, enabled={enabled}");
+        log::info!("Sync all complete");
         Ok(())
     }
 

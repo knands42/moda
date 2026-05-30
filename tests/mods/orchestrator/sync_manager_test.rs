@@ -18,23 +18,6 @@ fn reconciled_mods_from_vec(mods: Vec<ReconciledMod>) -> ModState {
 }
 
 #[test]
-fn test_stage_mods_empty_folder() {
-    // Given: an empty mods folder and a default state
-    let temp = TempDir::new().unwrap();
-    let config = make_config(&temp);
-
-    let game = make_game(temp.path().join("game"));
-    let manager = SyncManager::new(game, config);
-    let mut state = ModState::default();
-
-    // When: staging all mods
-    let result = manager.stage_mods(&mut state);
-
-    // Then: it succeeds without error
-    assert!(result.is_ok());
-}
-
-#[test]
 fn test_stage_one_mod_zip() {
     // Given: a flat zip (no wrapping dir) in the source folder
     let temp = TempDir::new().unwrap();
@@ -147,87 +130,6 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
 }
 
 #[test]
-fn test_stage_mods_with_mods() {
-    // Given: multiple directory mods in the source folder with tracked state
-    let temp = TempDir::new().unwrap();
-    let mods_path = temp
-        .path()
-        .join(".moda")
-        .join("mods")
-        .join("stardew_valley");
-    let staging_path = temp
-        .path()
-        .join(".moda")
-        .join("staging")
-        .join("stardew_valley");
-    fs::create_dir_all(&mods_path).unwrap();
-
-    fs::create_dir(mods_path.join("ModA")).unwrap();
-    fs::write(mods_path.join("ModA").join("a.txt"), "a").unwrap();
-    fs::create_dir(mods_path.join("ModB")).unwrap();
-    fs::write(mods_path.join("ModB").join("b.txt"), "b").unwrap();
-
-    let config = make_config(&temp);
-    let game = make_game(temp.path().join("game"));
-    let manager = SyncManager::new(game, config);
-    let mut state = reconciled_mods_from_vec(vec![
-        ReconciledMod {
-            name: "ModA".to_string(),
-            status: ModStatus::Downloaded,
-            source_entry: Some(ModEntry {
-                name: "ModA".to_string(),
-                path: mods_path.join("ModA"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            staging_entry: None,
-            game_entry: None,
-        },
-        ReconciledMod {
-            name: "ModB".to_string(),
-            status: ModStatus::Downloaded,
-            source_entry: Some(ModEntry {
-                name: "ModB".to_string(),
-                path: mods_path.join("ModB"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            staging_entry: None,
-            game_entry: None,
-        },
-    ]);
-
-    // When: batch-staging all mods
-    let result = manager.stage_mods(&mut state);
-
-    // Then: all mods are copied to staging and state reflects Staged
-    assert!(result.is_ok());
-    assert!(staging_path.join("ModA").join("a.txt").exists());
-    assert!(staging_path.join("ModB").join("b.txt").exists());
-    assert!(state
-        .snapshot()
-        .iter()
-        .all(|m| m.status == ModStatus::Staged));
-}
-
-#[test]
-fn test_enable_mods_empty_staging() {
-    // Given: an empty staging folder and a default state
-    let temp = TempDir::new().unwrap();
-    let config = make_config(&temp);
-
-    let game = make_game(temp.path().join("game"));
-    let manager = SyncManager::new(game, config);
-    let mut state = ModState::default();
-
-    // When: enabling all mods (none exist in staging)
-    let result = manager.enable_mods(&mut state);
-
-    // Then: it succeeds without error
-    assert!(result.is_ok());
-}
-
-#[test]
 fn test_enable_one_mod_source_not_found() {
     // Given: a mod entry pointing to a non-existent staging path
     let temp = TempDir::new().unwrap();
@@ -256,67 +158,6 @@ fn test_enable_one_mod_source_not_found() {
 
     // Then: an error is returned (Enabler::activate requires source to exist)
     assert!(result.is_err());
-}
-
-#[test]
-fn test_enable_mods_with_mods() {
-    // Given: multiple staged mods in the staging folder
-    let temp = TempDir::new().unwrap();
-    let staging_path = temp
-        .path()
-        .join(".moda")
-        .join("staging")
-        .join("stardew_valley");
-    let game_path = temp.path().join("game");
-
-    fs::create_dir_all(&staging_path).unwrap();
-    fs::create_dir(staging_path.join("ModA")).unwrap();
-    fs::write(staging_path.join("ModA").join("a.txt"), "a").unwrap();
-    fs::create_dir(staging_path.join("ModB")).unwrap();
-    fs::write(staging_path.join("ModB").join("b.txt"), "b").unwrap();
-
-    let config = make_config(&temp);
-
-    let game = make_game(game_path.clone());
-    let manager = SyncManager::new(game, config);
-    let mut state = reconciled_mods_from_vec(vec![
-        ReconciledMod {
-            name: "ModA".to_string(),
-            status: ModStatus::Staged,
-            source_entry: None,
-            staging_entry: Some(ModEntry {
-                name: "ModA".to_string(),
-                path: staging_path.join("ModA"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            game_entry: None,
-        },
-        ReconciledMod {
-            name: "ModB".to_string(),
-            status: ModStatus::Staged,
-            source_entry: None,
-            staging_entry: Some(ModEntry {
-                name: "ModB".to_string(),
-                path: staging_path.join("ModB"),
-                kind: ModEntryKind::Directory,
-                metadata: None,
-            }),
-            game_entry: None,
-        },
-    ]);
-
-    // When: batch-enabling all staged mods
-    let result = manager.enable_mods(&mut state);
-
-    // Then: all mods get symlinks in game mods and state shows Enabled
-    assert!(result.is_ok());
-    assert!(game_path.join("Mods").join("ModA").is_symlink());
-    assert!(game_path.join("Mods").join("ModB").is_symlink());
-    assert!(state
-        .snapshot()
-        .iter()
-        .all(|m| m.status == ModStatus::Enabled));
 }
 
 #[test]
