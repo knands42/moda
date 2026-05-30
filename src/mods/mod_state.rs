@@ -1,5 +1,4 @@
-use crate::mods::catalog::{ModStatus, ReconciledMod};
-use crate::mods::types::ModEntry;
+use crate::mods::types::{ModEntry, ModStatus, ReconciledMod};
 use std::collections::HashMap;
 
 #[derive(Clone, Default)]
@@ -15,11 +14,7 @@ impl ModState {
 
 impl ModState {
     pub fn set_staged(&mut self, mod_entry: &ModEntry) {
-        let base = mod_entry
-            .name
-            .strip_suffix(".zip")
-            .unwrap_or(&mod_entry.name);
-        if let Some(m) = self.mods.get_mut(base) {
+        if let Some(m) = self.mods.get_mut(&mod_entry.name) {
             m.status = ModStatus::Staged;
             m.staging_entry = Some(mod_entry.clone());
             m.game_entry = None;
@@ -27,11 +22,7 @@ impl ModState {
     }
 
     pub fn set_downloaded(&mut self, mod_entry: &ModEntry) {
-        let base = mod_entry
-            .name
-            .strip_suffix(".zip")
-            .unwrap_or(&mod_entry.name);
-        if let Some(m) = self.mods.get_mut(base) {
+        if let Some(m) = self.mods.get_mut(&mod_entry.name) {
             m.status = ModStatus::Downloaded;
             m.source_entry = Some(mod_entry.clone());
             m.staging_entry = None;
@@ -40,19 +31,14 @@ impl ModState {
     }
 
     pub fn set_enabled(&mut self, mod_entry: &ModEntry) {
-        let base = mod_entry
-            .name
-            .strip_suffix(".zip")
-            .unwrap_or(&mod_entry.name);
-        if let Some(m) = self.mods.get_mut(base) {
+        if let Some(m) = self.mods.get_mut(&mod_entry.name) {
             m.status = ModStatus::Enabled;
             m.game_entry = Some(mod_entry.clone());
         }
     }
 
     pub fn set_unstaged(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
-        if let Some(m) = self.mods.get_mut(base) {
+        if let Some(m) = self.mods.get_mut(name) {
             m.staging_entry = None;
             m.game_entry = None;
             m.status = ModStatus::Downloaded;
@@ -60,16 +46,14 @@ impl ModState {
     }
 
     pub fn set_disabled(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
-        if let Some(m) = self.mods.get_mut(base) {
+        if let Some(m) = self.mods.get_mut(name) {
             m.game_entry = None;
             m.status = ModStatus::Staged;
         }
     }
 
     pub fn remove(&mut self, name: &str) {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
-        self.mods.remove(base);
+        self.mods.remove(name);
     }
 
     pub fn get_mods(&self) -> impl Iterator<Item = &ReconciledMod> {
@@ -84,7 +68,6 @@ impl ModState {
     }
 
     pub fn get_mod(&self, name: &str) -> Option<&ReconciledMod> {
-        let base = name.strip_suffix(".zip").unwrap_or(name);
-        self.mods.get(base)
+        self.mods.get(name)
     }
 }

@@ -1,11 +1,12 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::games::Game;
-use crate::mods::catalog::{Catalog, ModStatus};
+use crate::mods::catalog::Catalog;
 use crate::mods::enabler::Enabler;
 use crate::mods::mod_state::ModState;
 use crate::mods::stager::Stager;
 use crate::mods::types::ModEntry;
+use crate::mods::types::ModStatus;
 use crate::mods::{DirectCopyStager, SymlinkEnabler};
 use std::path::{Path, PathBuf};
 

@@ -1,6 +1,6 @@
 use crate::games::ModMode;
-use crate::mods::catalog::ModStatus;
 use crate::mods::types::ModEntry;
+use crate::mods::types::ModStatus;
 use crate::mods::ModEntryKind;
 use crate::ui::active_game::ActiveGame;
 

@@ -2,28 +2,11 @@ use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::mods::mod_state::ModState;
 use crate::mods::stager::{strip_zip_ext, Stager, ZipStager};
-use crate::mods::types::{allowed_extensions, ModEntry, ModEntryKind};
+use crate::mods::types::{allowed_extensions, ModEntry, ModEntryKind, ModStatus, ReconciledMod};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModStatus {
-    Downloaded,
-    Staged,
-    Enabled,
-    Modified,
-}
-
-#[derive(Clone, Debug)]
-pub struct ReconciledMod {
-    pub name: String,
-    pub status: ModStatus,
-    pub source_entry: Option<ModEntry>,
-    pub staging_entry: Option<ModEntry>,
-    pub game_entry: Option<ModEntry>,
-}
 
 pub struct Catalog {
     config: Config,

@@ -1,7 +1,6 @@
 use crate::mods::test_util::{create_zip, make_config};
 use moda::games::StardewValley;
-use moda::mods::catalog::{ModStatus, ReconciledMod};
-use moda::mods::types::ModEntry;
+use moda::mods::types::{ModEntry, ModStatus, ReconciledMod};
 use moda::mods::{ModEntryKind, ModState, SyncManager};
 use std::fs;
 use std::path::PathBuf;

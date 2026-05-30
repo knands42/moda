@@ -18,6 +18,23 @@ pub enum ModEntryKind {
     Other,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModStatus {
+    Downloaded,
+    Staged,
+    Enabled,
+    Modified,
+}
+
+#[derive(Clone, Debug)]
+pub struct ReconciledMod {
+    pub name: String,
+    pub status: ModStatus,
+    pub source_entry: Option<ModEntry>,
+    pub staging_entry: Option<ModEntry>,
+    pub game_entry: Option<ModEntry>,
+}
+
 pub fn allowed_extensions() -> &'static [&'static str] {
     static ALLOWED_EXTENSIONS: &[&str] = &["zip", "rar"];
     ALLOWED_EXTENSIONS

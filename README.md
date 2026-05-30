@@ -40,7 +40,6 @@ moda/
 │   ├── lib.rs               # Re-exports public modules
 │   ├── config.rs            # Config loading from ~/.config/moda/config.toml
 │   ├── error.rs             # Error handling
-│   ├── ui/                  # egui UI (app, pages, widgets)
 │   ├── games/
 │   │   ├── mod.rs           # Game trait definition
 │   │   ├── stardew.rs       # Stardew Valley implementation
@@ -49,22 +48,65 @@ moda/
 │   ├── mods/
 │   │   ├── mod.rs           # Re-exports public mod modules
 │   │   ├── catalog.rs       # Mod catalog (indexing available mods)
-│   │   ├── installer.rs     # Mod installation logic
 │   │   ├── mod_state.rs     # Mod state tracking
+│   │   ├── types.rs         # Shared mod types
 │   │   ├── downloader/
 │   │   │   ├── mod.rs       # Downloader abstraction
 │   │   │   └── nexus.rs     # Nexus API client
 │   │   ├── enabler/
-│   │   │   ├── mod.rs                      # Enabler abstraction
-│   │   │   ├── symlink_enabler.rs          # Only symlink mods to game folder
-│   │   │   ├── direct_copy_enabler.rs      # Directly copy files to game folder
-│   │   │   └── pak_enabler.rs              # Pak files (e.g. RE2 Remake)
-│   │   └── orchestrator/
-│   │       ├── mod.rs       # Orchestrator abstraction
-│   │       └── sync_manager.rs  # Sync logic between library and game folder
-│   └── profiles/
-│       └── mod.rs           # Profile management (stub)
+│   │   │   ├── mod.rs                     # Enabler abstraction
+│   │   │   ├── symlink_enabler.rs         # Symlink mods to game folder
+│   │   │   ├── direct_copy_enabler.rs     # Copy files to game folder
+│   │   │   └── pak_enabler.rs             # Pak files (e.g. RE2 Remake)
+│   │   ├── orchestrator/
+│   │   │   ├── mod.rs       # Orchestrator abstraction
+│   │   │   └── sync_manager.rs  # Sync logic between library and game folder
+│   │   └── stager/
+│   │       ├── mod.rs                     # Stager abstraction
+│   │       ├── direct_copy_stager.rs      # Direct copy staging
+│   │       └── zip_stager.rs              # Zip extraction staging
+│   ├── profiles/
+│   │   └── mod.rs           # Profile management (stub)
+│   └── ui/
+│       ├── mod.rs           # UI module root
+│       ├── app.rs           # eframe App state management
+│       ├── active_game.rs   # Active game UI state
+│       ├── style.rs         # egui styling
+│       ├── components/
+│       │   ├── mod.rs
+│       │   └── game_card.rs # Game selection card widget
+│       ├── pages/
+│       │   ├── mod.rs
+│       │   ├── game_selection.rs  # Game selection page
+│       │   └── mod_manager.rs     # Mod manager page
+│       └── widgets/
+│           ├── mod.rs
+│           └── dir_browser.rs     # Directory browser widget
 └── tests/
+    ├── mod.rs
+    ├── config_test.rs
+    ├── games/
+    │   ├── mod.rs
+    │   ├── stardew_test.rs
+    │   └── mad_max.rs
+    └── mods/
+        ├── mod.rs
+        ├── catalog_test.rs
+        ├── mod_state_test.rs
+        ├── test_util.rs
+        ├── downloader/
+        │   ├── mod.rs
+        │   └── nexus_test.rs
+        ├── enabler/
+        │   ├── mod.rs
+        │   └── enabler_test.rs
+        ├── orchestrator/
+        │   ├── mod.rs
+        │   └── sync_manager_test.rs
+        └── stager/
+            ├── mod.rs
+            ├── direct_copy_stager_test.rs
+            └── zip_stager_test.rs
 ```
 
 ## Flow
