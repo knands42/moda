@@ -1,15 +1,14 @@
 pub mod catalog;
 pub mod downloader;
 pub mod enabler;
-mod installer;
+pub mod installer;
 mod mod_state;
 mod orchestrator;
 
 pub use enabler::SymlinkEnabler;
-pub use installer::{strip_zip_ext, Installer, ModSource};
+pub use installer::{strip_zip_ext, DirectCopyInstaller, Installer, ZipInstaller};
 pub use mod_state::ModState;
 pub use orchestrator::{SyncManager, SyncManagerOps};
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ModEntryKind {
@@ -30,3 +29,8 @@ pub fn map_ext_to_kind(ext: &str) -> ModEntryKind {
         _ => ModEntryKind::Other,
     }
 }
+//
+// pub fn map_ext_to_installer(kind: ModEntryKind) -> Enabler {
+//     match kind {
+//     }
+// }

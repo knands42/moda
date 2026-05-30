@@ -1,8 +1,8 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
-use crate::mods::installer::strip_zip_ext;
+use crate::mods::installer::{strip_zip_ext, Installer};
 use crate::mods::mod_state::ModState;
-use crate::mods::{allowed_extensions, Installer, ModEntryKind};
+use crate::mods::{allowed_extensions, ModEntryKind, ZipInstaller};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
@@ -180,7 +180,12 @@ impl Catalog {
                 .into_string()
                 .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
 
-            if entry.path().extension().and_then(OsStr::to_str).is_some_and(|s| allowed_extensions().contains(&s)) {
+            if entry
+                .path()
+                .extension()
+                .and_then(OsStr::to_str)
+                .is_some_and(|s| allowed_extensions().contains(&s))
+            {
                 entries.push(ModEntry {
                     name,
                     path: entry.path(),
@@ -195,7 +200,11 @@ impl Catalog {
                     metadata: None,
                 });
             } else {
-                log::warn!("Mod {} uses an unsupported file extension: Skipping unsupported file: {}", name, entry.path().display());
+                log::warn!(
+                    "Mod {} uses an unsupported file extension: Skipping unsupported file: {}",
+                    name,
+                    entry.path().display()
+                );
             }
         }
 
@@ -205,7 +214,7 @@ impl Catalog {
 
 fn effective_name(entry: &ModEntry) -> String {
     if entry.kind == ModEntryKind::ZipArchive {
-        match Installer::zip_wrap_directory(&entry.path) {
+        match ZipInstaller::get_mod_name_from_installer(&entry.path) {
             Ok(Some(dir)) => dir,
             _ => strip_zip_ext(&entry.name),
         }
@@ -219,4 +228,3 @@ fn is_newer(a: &Path, b: &Path) -> bool {
     let b_mt = fs::metadata(b).ok().and_then(|m| m.modified().ok());
     a_mt.zip(b_mt).is_some_and(|(a, b)| a > b)
 }
-

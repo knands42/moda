@@ -3,9 +3,9 @@ use crate::error::ModManagerError;
 use crate::games::Game;
 use crate::mods::catalog::{Catalog, ModEntry, ModStatus};
 use crate::mods::enabler::Enabler;
-use crate::mods::installer::strip_zip_ext;
+use crate::mods::installer::{strip_zip_ext, Installer};
 use crate::mods::mod_state::ModState;
-use crate::mods::{Installer, ModEntryKind, ModSource, SymlinkEnabler};
+use crate::mods::{DirectCopyInstaller, ModEntryKind, SymlinkEnabler, ZipInstaller};
 use std::path::{Path, PathBuf};
 
 pub struct SyncManager<G: Game> {
@@ -43,6 +43,7 @@ impl<G: Game> SyncManager<G> {
         Ok(())
     }
 
+    // TODO: refactor this for more fily types
     pub fn stage_one_mod(
         &self,
         mod_entry: &ModEntry,
@@ -53,7 +54,7 @@ impl<G: Game> SyncManager<G> {
         match mod_entry.kind {
             ModEntryKind::Directory => {
                 let target = staging_path.join(&mod_entry.name);
-                Installer::install(&ModSource::LocalDir(mod_entry.path.clone()), &target)?;
+                DirectCopyInstaller::install(mod_entry.path.clone().as_path(), &target)?;
                 let staging_entry = ModEntry {
                     name: mod_entry.name.clone(),
                     path: target,
@@ -63,14 +64,15 @@ impl<G: Game> SyncManager<G> {
                 state.set_staged(&staging_entry);
             }
             ModEntryKind::ZipArchive => {
-                let (staging_name, target) = match Installer::zip_wrap_directory(&mod_entry.path)? {
-                    Some(dir) => (dir, staging_path.clone()),
-                    None => {
-                        let name = strip_zip_ext(&mod_entry.name);
-                        (name.clone(), staging_path.join(&name))
-                    }
-                };
-                Installer::install(&ModSource::LocalZip(mod_entry.path.clone()), &target)?;
+                let (staging_name, target) =
+                    match ZipInstaller::get_mod_name_from_installer(&mod_entry.path)? {
+                        Some(dir) => (dir, staging_path.clone()),
+                        None => {
+                            let name = strip_zip_ext(&mod_entry.name);
+                            (name.clone(), staging_path.join(&name))
+                        }
+                    };
+                ZipInstaller::install(&mod_entry.path, &target)?;
                 let staging_entry = ModEntry {
                     name: staging_name.clone(),
                     path: staging_path.join(&staging_name),
@@ -110,7 +112,7 @@ impl<G: Game> SyncManager<G> {
         let _ = SymlinkEnabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
 
         if mod_entry.path.exists() {
-            Installer::uninstall_from_dir(&mod_entry.path)?;
+            DirectCopyInstaller::uninstall(&mod_entry.path)?;
         }
 
         self.resolve_after_unstage(mod_entry, state);

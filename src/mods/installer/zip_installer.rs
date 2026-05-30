@@ -1,7 +1,8 @@
 use crate::error::ModManagerError;
+use crate::mods::installer::Installer;
 use std::fs::File;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use zip::ZipArchive;
 
 /// Strips the `.zip` extension from a filename, returning the base name.
@@ -9,17 +10,12 @@ pub fn strip_zip_ext(name: &str) -> String {
     name.strip_suffix(".zip").unwrap_or(name).to_string()
 }
 
-pub enum ModSource {
-    LocalZip(PathBuf),
-    LocalDir(PathBuf),
-}
+pub struct ZipInstaller;
 
-pub struct Installer;
-
-impl Installer {
+impl Installer for ZipInstaller {
     /// Checks if a zip wraps its content in a single top-level directory.
     /// Returns `Some(dir_name)` if it wraps, `None` if files are scattered at root.
-    pub fn zip_wrap_directory(zip_path: &Path) -> Result<Option<String>, ModManagerError> {
+    fn get_mod_name_from_installer(zip_path: &Path) -> Result<Option<String>, ModManagerError> {
         let file = File::open(zip_path)?;
         let mut archive = ZipArchive::new(file)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
@@ -57,44 +53,24 @@ impl Installer {
         Ok(result)
     }
 
-    pub fn install(source: &ModSource, target: &Path) -> Result<(), ModManagerError> {
-        match source {
-            ModSource::LocalZip(file_path) => {
-                log::info!(
-                    "Installing zip {} -> {}",
-                    file_path.display(),
-                    target.display()
-                );
-                Self::install_from_zip(file_path, target)
-            }
-            ModSource::LocalDir(file_path) => {
-                log::info!(
-                    "Installing dir {} -> {}",
-                    file_path.display(),
-                    target.display()
-                );
-                Self::install_from_dir(file_path, target)
-            }
-        }?;
+    fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {
+        log::info!(
+            "Installing zip {} -> {}",
+            source.display(),
+            target.display()
+        );
+        Self::install_from_zip(source, target)?;
 
         log::info!("Install complete: {} entries", count_entries(target));
         Ok(())
     }
 
-    pub fn uninstall_from_dir(file_path: &Path) -> Result<(), ModManagerError> {
-        match std::fs::remove_dir_all(file_path) {
-            Ok(_) => {
-                log::info!("Uninstalled {}", file_path.display());
-                Ok(())
-            }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                log::warn!("Uninstall target not found: {}", file_path.display());
-                Ok(())
-            }
-            Err(e) => Err(ModManagerError::IoError(e)),
-        }
+    fn uninstall(_file_path: &Path) -> Result<(), ModManagerError> {
+        todo!()
     }
+}
 
+impl ZipInstaller {
     fn install_from_zip(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
         let file = File::open(file_path)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
@@ -130,28 +106,6 @@ impl Installer {
                 std::io::copy(&mut entry, &mut out_file).map_err(|e| {
                     ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e))
                 })?;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn install_from_dir(folder_path: &Path, target: &Path) -> Result<(), ModManagerError> {
-        Self::copy_dir_recursive(folder_path, target)
-    }
-
-    fn copy_dir_recursive(folder_src: &Path, folder_dst: &Path) -> Result<(), ModManagerError> {
-        std::fs::create_dir_all(folder_dst)?;
-
-        for entry in std::fs::read_dir(folder_src)? {
-            let entry = entry?;
-            let src_file_path = entry.path();
-            let dst_file_path = folder_dst.join(entry.file_name());
-
-            if src_file_path.is_dir() {
-                Self::copy_dir_recursive(&src_file_path, &dst_file_path)?;
-            } else {
-                std::fs::copy(&src_file_path, &dst_file_path)?;
             }
         }
 

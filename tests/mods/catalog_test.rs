@@ -1,8 +1,8 @@
+use crate::mods::test_util::{create_zip, make_config};
 use moda::mods::catalog::{Catalog, ModStatus};
+use moda::mods::ModEntryKind;
 use std::fs;
 use tempfile::TempDir;
-use moda::mods::ModEntryKind;
-use crate::mods::test_util::{create_zip, make_config};
 
 #[test]
 fn test_reconcile_empty() {
