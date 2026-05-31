@@ -53,23 +53,7 @@ impl Stager for ZipStager {
             )))
         }
     }
-
-    fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {
-        log::info!(
-            "Installing zip {} -> {}",
-            source.display(),
-            target.display()
-        );
-        Self::install_from_zip(source, target)?;
-
-        log::info!("Staging complete: {} entries", count_entries(target));
-        Ok(())
-    }
-
-    fn unstage(_file_path: &Path) -> Result<(), ModManagerError> {
-        todo!()
-    }
-
+    
     fn stage(entry: &ModEntry, staging_path: &Path) -> Result<ModEntry, ModManagerError> {
         let (name, target) = match Self::get_mod_name(&entry.path) {
             Ok(dir) => (dir, staging_path.to_path_buf()),
@@ -89,7 +73,19 @@ impl Stager for ZipStager {
 }
 
 impl ZipStager {
-    fn install_from_zip(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
+    fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {
+        log::info!(
+            "Installing zip {} -> {}",
+            source.display(),
+            target.display()
+        );
+        Self::process_archive(source, target)?;
+
+        log::info!("Staging complete: {} entries", count_entries(target));
+        Ok(())
+    }
+    
+    fn process_archive(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
         let file = File::open(file_path)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
         let mut archive = ZipArchive::new(file)

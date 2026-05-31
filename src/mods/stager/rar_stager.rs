@@ -47,33 +47,7 @@ impl Stager for RarStager {
             )))
         }
     }
-
-    fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {
-        log::info!(
-            "Installing rar {} -> {}",
-            source.display(),
-            target.display()
-        );
-        Self::install_from_rar(source, target)?;
-
-        log::info!("Staging complete");
-        Ok(())
-    }
-
-    fn unstage(file_path: &Path) -> Result<(), ModManagerError> {
-        match std::fs::remove_dir_all(file_path) {
-            Ok(_) => {
-                log::info!("Uninstalled {}", file_path.display());
-                Ok(())
-            }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                log::warn!("Uninstall target not found: {}", file_path.display());
-                Ok(())
-            }
-            Err(e) => Err(ModManagerError::IoError(e)),
-        }
-    }
-
+    
     fn stage(entry: &ModEntry, staging_path: &Path) -> Result<ModEntry, ModManagerError> {
         let (name, target) = match Self::get_mod_name(&entry.path) {
             Ok(dir) => (dir, staging_path.to_path_buf()),
@@ -82,7 +56,7 @@ impl Stager for RarStager {
                 (name.clone(), staging_path.join(&name))
             }
         };
-        Self::install(&entry.path, &target)?;
+        Self::install_from_rar(&entry.path, &target)?;
         Ok(ModEntry {
             name: name.clone(),
             path: staging_path.join(&name),
@@ -93,8 +67,14 @@ impl Stager for RarStager {
 }
 
 impl RarStager {
-    fn install_from_rar(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
-        let archive = Archive::new(file_path)
+    fn install_from_rar(source: &Path, target: &Path) -> Result<(), ModManagerError> {
+        log::info!(
+            "Installing rar {} -> {}",
+            source.display(),
+            target.display()
+        );
+        
+        let archive = Archive::new(source)
             .open_for_processing()
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;
 

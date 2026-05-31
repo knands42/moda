@@ -4,14 +4,14 @@
 - Stardew Valley game support
 - Mod syncing (symlink enabler)
 - egui UI framework
-- Config & 
+- `Support rar` mod type
 
 ## IN PROGRESS
-- `Support rar` mod type
 - `direct_copy_enabler` mod type
 - `marvel_rivals` game support
 
 ## PLANNED
+- `export logging file` for debugging
 - `7z` mod type
 - `tar.gz` mod type
 - `pak` enabler type

@@ -87,7 +87,7 @@ fn test_pre_setup_smapi_already_installed() {
     let _lock = SMAPI_LOCK.lock().unwrap();
     mock_smapi_download(&mut Server::new(), 200, create_smapi_zip());
     let game_dir = tempdir().unwrap();
-    fs::write(game_dir.path().join("SMAPI.ZipInstaller.dll"), b"").unwrap();
+    fs::write(game_dir.path().join("SMAPI.Installer.dll"), b"").unwrap();
 
     let sv = StardewValley::new(game_dir.path().to_path_buf());
     let result = sv.pre_setup();

@@ -2,6 +2,7 @@ use crate::error::ModManagerError;
 use crate::mods::stager::Stager;
 use std::io;
 use std::path::Path;
+use crate::mods::{strip_rar_ext, ModEntry, ModEntryKind};
 
 pub struct DirectCopyStager;
 
@@ -14,38 +15,32 @@ impl Stager for DirectCopyStager {
             })
     }
 
-    fn install(source: &Path, target: &Path) -> Result<(), ModManagerError> {
+    fn stage(entry: &ModEntry, staging_path: &Path) -> Result<ModEntry, ModManagerError> {
+        let target = staging_path.join(&entry.name);
+        Self::copy_dir_recursive(&entry.path, &target)?;
+        Ok(ModEntry {
+            name: entry.name.clone(),
+            path: target,
+            kind: ModEntryKind::Directory,
+            metadata: None,
+        })
+    }
+}
+
+impl DirectCopyStager {
+    fn copy_dir_recursive(source: &Path, target: &Path) -> Result<(), ModManagerError> {
         log::info!(
             "Installing dir {} -> {}",
             source.display(),
             target.display()
         );
-        Self::copy_dir_recursive(source, target)
-    }
+        
+        std::fs::create_dir_all(target)?;
 
-    fn unstage(file_path: &Path) -> Result<(), ModManagerError> {
-        match std::fs::remove_dir_all(file_path) {
-            Ok(_) => {
-                log::info!("Uninstalled {}", file_path.display());
-                Ok(())
-            }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                log::warn!("Uninstall target not found: {}", file_path.display());
-                Ok(())
-            }
-            Err(e) => Err(ModManagerError::IoError(e)),
-        }
-    }
-}
-
-impl DirectCopyStager {
-    fn copy_dir_recursive(folder_src: &Path, folder_dst: &Path) -> Result<(), ModManagerError> {
-        std::fs::create_dir_all(folder_dst)?;
-
-        for entry in std::fs::read_dir(folder_src)? {
+        for entry in std::fs::read_dir(source)? {
             let entry = entry?;
             let src_file_path = entry.path();
-            let dst_file_path = folder_dst.join(entry.file_name());
+            let dst_file_path = target.join(entry.file_name());
 
             if src_file_path.is_dir() {
                 Self::copy_dir_recursive(&src_file_path, &dst_file_path)?;

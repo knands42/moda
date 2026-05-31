@@ -8,7 +8,7 @@ use tempfile::TempDir;
 
 fn make_game(game_path: PathBuf) -> StardewValley {
     fs::create_dir_all(&game_path).unwrap();
-    fs::write(game_path.join("SMAPI.ZipInstaller.dll"), "").unwrap();
+    fs::write(game_path.join("SMAPI.Installer.dll"), "").unwrap();
     StardewValley::new(game_path)
 }
 

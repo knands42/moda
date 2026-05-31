@@ -59,7 +59,7 @@ impl Game for StardewValley {
     }
 
     fn pre_setup(&self) -> Result<(), ModManagerError> {
-        if self.game_path.join("SMAPI.ZipInstaller.dll").exists() {
+        if self.game_path.join("SMAPI.Installer.dll").exists() {
             log::info!("SMAPI already installed");
             return Ok(());
         }
