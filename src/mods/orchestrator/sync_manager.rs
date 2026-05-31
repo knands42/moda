@@ -158,6 +158,21 @@ impl<G: Game> SyncManager<G> {
         Ok(state)
     }
 
+    pub fn reconcile_from_db(&self) -> Result<ModState, ModManagerError> {
+        log::info!("Reconciling mod state from database");
+        let state = self.catalog.reconcile_from_db()?;
+        if state.snapshot().is_empty() {
+            log::info!("No mods in database, falling back to filesystem scan");
+            let state = self.reconcile(&self.game_mod_path())?;
+            let count = state.snapshot().len();
+            log::info!("Filesystem scan complete: {} mods found", count);
+            return Ok(state);
+        }
+        let count = state.snapshot().len();
+        log::info!("Reconcile from DB complete: {} mods found", count);
+        Ok(state)
+    }
+
     pub fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {
         log::info!("Sync all started");
 

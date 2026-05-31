@@ -11,6 +11,7 @@ pub trait SyncManagerOps {
     fn game(&self) -> &dyn Game;
     fn game_mod_path(&self) -> PathBuf;
     fn reconcile(&self) -> Result<ModState, ModManagerError>;
+    fn reconcile_from_db(&self) -> Result<ModState, ModManagerError>;
     fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError>;
     fn stage_one_mod(
         &self,
@@ -45,6 +46,10 @@ impl<G: Game> SyncManagerOps for SyncManager<G> {
 
     fn reconcile(&self) -> Result<ModState, ModManagerError> {
         SyncManager::reconcile(self, &SyncManager::game_mod_path(self))
+    }
+
+    fn reconcile_from_db(&self) -> Result<ModState, ModManagerError> {
+        SyncManager::reconcile_from_db(self)
     }
 
     fn sync_all(&self, state: &mut ModState) -> Result<(), ModManagerError> {

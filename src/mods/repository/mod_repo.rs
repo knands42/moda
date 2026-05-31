@@ -2,6 +2,18 @@ use std::sync::Arc;
 
 use turso::{params, Builder, Connection, Database, Value};
 
+type ModRowValues = (
+    String,
+    String,
+    String,
+    Value,
+    Value,
+    Value,
+    Value,
+    Value,
+    Value,
+);
+
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::mods::types::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
@@ -14,6 +26,11 @@ pub trait ModRepository: Send + Sync {
         mod_entry: &ReconciledMod,
     ) -> Result<(), ModManagerError>;
     fn remove_mod(&self, game_registry_id: &str, name: &str) -> Result<(), ModManagerError>;
+    fn set_mods(
+        &self,
+        game_registry_id: &str,
+        mods: &[ReconciledMod],
+    ) -> Result<(), ModManagerError>;
 }
 
 pub struct TursoModRepository {
@@ -182,6 +199,87 @@ impl ModRepository for TursoModRepository {
             )
             .await
             .map_err(|e| ModManagerError::DatabaseError(e.to_string()))?;
+            Ok(())
+        })
+    }
+
+    fn set_mods(
+        &self,
+        game_registry_id: &str,
+        mods: &[ReconciledMod],
+    ) -> Result<(), ModManagerError> {
+        let conn = self.conn()?;
+        let reg_id = game_registry_id.to_string();
+        let batch: Vec<ModRowValues> = mods
+            .iter()
+            .map(|m| {
+                let status = status_to_str(m.status).to_string();
+                let (src_path, src_kind) = entry_values(&m.source_entry);
+                let (stg_path, stg_kind) = entry_values(&m.staging_entry);
+                let (game_path, game_kind) = entry_values(&m.game_entry);
+                (
+                    m.name.clone(),
+                    status,
+                    reg_id.clone(),
+                    src_path,
+                    src_kind,
+                    stg_path,
+                    stg_kind,
+                    game_path,
+                    game_kind,
+                )
+            })
+            .collect();
+
+        self.runtime.block_on(async {
+            conn.execute("BEGIN TRANSACTION", params![])
+                .await
+                .map_err(|e| ModManagerError::DatabaseError(e.to_string()))?;
+
+            conn.execute(
+                "DELETE FROM mods WHERE game_registry_id = ?1",
+                params![Value::Text(reg_id.clone())],
+            )
+            .await
+            .map_err(|e| ModManagerError::DatabaseError(e.to_string()))?;
+
+            for (
+                name,
+                status,
+                ref rid,
+                ref src_p,
+                ref src_k,
+                ref stg_p,
+                ref stg_k,
+                ref gm_p,
+                ref gm_k,
+            ) in &batch
+            {
+                conn.execute(
+                    "INSERT INTO mods (game_registry_id, name, status, source_path, source_kind, \
+                     staging_path, staging_kind, game_path, game_kind, enabler_type) \
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                    params![
+                        Value::Text(rid.clone()),
+                        Value::Text(name.clone()),
+                        Value::Text(status.clone()),
+                        src_p.clone(),
+                        src_k.clone(),
+                        stg_p.clone(),
+                        stg_k.clone(),
+                        gm_p.clone(),
+                        gm_k.clone(),
+                        Value::Text(String::from("symlink")),
+                    ],
+                )
+                .await
+                .map_err(|e| ModManagerError::DatabaseError(e.to_string()))?;
+            }
+
+            conn.execute("COMMIT", params![])
+                .await
+                .map_err(|e| ModManagerError::DatabaseError(e.to_string()))?;
+
             Ok(())
         })
     }

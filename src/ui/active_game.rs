@@ -19,7 +19,7 @@ impl ActiveGame {
         config: &Config,
     ) -> Result<Self, ModManagerError> {
         let sync_manager = (descriptor.construct)(path, config.clone());
-        let state = sync_manager.reconcile()?;
+        let state = sync_manager.reconcile_from_db()?;
         Ok(Self {
             sync_manager,
             state,

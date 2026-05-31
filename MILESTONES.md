@@ -6,9 +6,9 @@
 - egui UI framework
 - `Support rar` mod type
 - `allow reconcile` button action
+- `persist state` into a sqlite file
 
 ## IN PROGRESS
-- `persist state` into a sqlite file
 - `direct_copy_enabler` mod type
 - `marvel_rivals` game support
 

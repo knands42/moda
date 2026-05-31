@@ -117,6 +117,13 @@ impl Catalog {
             );
         }
 
+        // Persist the reconciled state to DB so a subsequent reconcile_from_db
+        // returns the same result — recovers from a deleted DB on next scan.
+        let all_mods: Vec<ReconciledMod> = reconciled.values().cloned().collect();
+        if let Err(e) = self.repository.set_mods(self.registry_id, &all_mods) {
+            log::warn!("Failed to persist reconcile results to DB: {}", e);
+        }
+
         Ok(ModState::new(reconciled, self.repository.clone()))
     }
 
