@@ -22,6 +22,20 @@ pub fn render(
                 .strong(),
         );
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let reconcile_btn = egui::Button::new(
+                egui::RichText::new("\u{1F503}  Reconcile")
+                    .size(14.0)
+                    .color(egui::Color32::WHITE),
+            )
+            .fill(style::CARD_BG)
+            .min_size(egui::vec2(130.0, 32.0));
+            if ui.add(reconcile_btn).clicked() {
+                log::info!("Reconcile triggered for {}", game_name);
+                if let Err(e) = active_game.reconcile() {
+                    *error = Some(format!("Reconcile failed: {}", e));
+                }
+            }
+
             let sync_btn = egui::Button::new(
                 egui::RichText::new("\u{1F504}  Sync All")
                     .size(14.0)
@@ -144,6 +158,7 @@ fn render_downloads_tab(
                                     ModEntryKind::ZipArchive => "ZIP",
                                     ModEntryKind::RarArchive => "RAR",
                                     ModEntryKind::Directory => "Folder",
+                                    ModEntryKind::PakArchive => "PAK",
                                     ModEntryKind::Other => "Other",
                                 })
                                 .size(12.0)

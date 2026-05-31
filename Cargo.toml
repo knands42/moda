@@ -24,6 +24,7 @@ log-panics = "2.1"
 egui = { version = "0.34.2", default-features = false, features = ["default_fonts"] }
 eframe = "0.34.2"
 sevenz-rust2 = { version = "0.20" }
+turso = "0.6.1"
 
 [dev-dependencies]
 mockito = "1.5"

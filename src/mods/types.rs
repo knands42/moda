@@ -16,6 +16,7 @@ pub enum ModEntryKind {
     Directory,
     ZipArchive,
     RarArchive,
+    PakArchive,
     Other,
 }
 
@@ -45,6 +46,7 @@ pub fn map_ext_to_kind(ext: &str) -> ModEntryKind {
     match ext {
         "zip" => ModEntryKind::ZipArchive,
         "rar" => ModEntryKind::RarArchive,
+        "pak" => ModEntryKind::PakArchive,
         _ => ModEntryKind::Other,
     }
 }

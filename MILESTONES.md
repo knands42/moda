@@ -5,8 +5,10 @@
 - Mod syncing (symlink enabler)
 - egui UI framework
 - `Support rar` mod type
+- `allow reconcile` button action
 
 ## IN PROGRESS
+- `persist state` into a sqlite file
 - `direct_copy_enabler` mod type
 - `marvel_rivals` game support
 

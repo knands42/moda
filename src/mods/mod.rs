@@ -5,6 +5,7 @@ mod mod_state;
 mod orchestrator;
 pub mod stager;
 pub mod types;
+pub mod repository;
 
 use std::path::Path;
 
@@ -35,6 +36,7 @@ impl ModEntryKind {
                 let entry = RarStager::stage(mod_entry, staging_path)?;
                 Ok(Some(entry))
             }
+            ModEntryKind::PakArchive => Ok(None),
             ModEntryKind::Other => Ok(None),
         }
     }

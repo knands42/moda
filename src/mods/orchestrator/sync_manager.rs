@@ -152,7 +152,7 @@ impl<G: Game> SyncManager<G> {
 impl<G: Game> SyncManager<G> {
     pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mod state from {}", game_mod_path.display());
-        let state = self.catalog.reconcile(game_mod_path)?;
+        let state = self.catalog.reconcile_from_filesystem(game_mod_path)?;
         let count = state.snapshot().len();
         log::info!("Reconcile complete: {} mods found", count);
         Ok(state)

@@ -25,7 +25,11 @@ impl Catalog {
         }
     }
 
-    pub fn reconcile(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
+    pub fn reconcile_from_db(&self) -> Result<ModState, ModManagerError> {
+        todo!()
+    }
+
+    pub fn reconcile_from_filesystem(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;
         let staged_mods = self.list_staging_folder()?;

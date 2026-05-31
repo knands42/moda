@@ -2,6 +2,7 @@ use std::env::VarError;
 use std::io;
 use std::path::PathBuf;
 
+// TODO: make different errors, one for filesystem errors, another for db errors, and another for all remaining (this one)
 #[derive(Debug)]
 pub enum ModManagerError {
     GameNotFound(String),
@@ -13,6 +14,7 @@ pub enum ModManagerError {
     InvalidMod(String),
 
     IoError(io::Error),
+    DatabaseError(String),
     NexusApiError(String),
     GameSetupFailed(String),
 }
@@ -37,6 +39,7 @@ impl std::fmt::Display for ModManagerError {
                 write!(f, "Path discovery failed: {}", path)
             }
             ModManagerError::IoError(e) => write!(f, "IO error: {}", e),
+            ModManagerError::DatabaseError(e) => write!(f, "Database error: {}", e),
             ModManagerError::InvalidMod(s) => write!(f, "Invalid mod: {}", s),
             ModManagerError::NexusApiError(s) => write!(f, "Nexus API error: {}", s),
             ModManagerError::GameSetupFailed(s) => write!(f, "Game setup failed: {}", s),

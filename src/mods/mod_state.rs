@@ -1,14 +1,16 @@
 use crate::mods::types::{ModEntry, ModStatus, ReconciledMod};
 use std::collections::HashMap;
+use crate::mods::repository::ModRepository;
 
-#[derive(Clone, Default)]
 pub struct ModState {
     mods: HashMap<String, ReconciledMod>,
+    repository: Box<dyn ModRepository>
 }
 
 impl ModState {
     pub fn new(mods: HashMap<String, ReconciledMod>) -> Self {
-        Self { mods }
+        let repository = todo!();
+        Self { mods, repository }
     }
 }
 

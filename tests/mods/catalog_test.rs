@@ -12,7 +12,7 @@ fn test_reconcile_empty() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert!(result.snapshot().is_empty());
 }
@@ -41,7 +41,7 @@ fn test_reconcile_enabled_failed_if_not_symlink_mod() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
     let m = &result.snapshot()[0];
@@ -90,7 +90,7 @@ fn test_reconcile_zip_variants() {
 
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 4);
 
@@ -185,7 +185,7 @@ fn test_reconcile_multiple_mixed_states() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
     let snapshot = result.snapshot();
 
     assert_eq!(snapshot.len(), 3);
@@ -276,7 +276,7 @@ fn test_reconcile_enabled_mod_without_download() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
     let m = &result.snapshot()[0];
@@ -310,7 +310,7 @@ fn test_reconcile_enabled_mod_without_staging() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
     let m = &result.snapshot()[0];
@@ -348,7 +348,7 @@ fn test_reconcile_orphan_enabled() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
     let m = &result.snapshot()[0];
@@ -380,7 +380,7 @@ fn test_reconcile_orphan_staged() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
     let m = &result.snapshot()[0];
@@ -439,7 +439,7 @@ fn test_reconcile_modified() {
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
 
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
     let snapshot = result.snapshot();
 
     assert_eq!(snapshot.len(), 2);
@@ -515,7 +515,7 @@ fn test_reconcile_enabled_with_staging_only_no_source() {
 
     let config = make_config(&temp);
     let catalog = Catalog::new(config, "stardew_valley");
-    let result = catalog.reconcile(&game_path).unwrap();
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
 
     assert_eq!(result.snapshot().len(), 1);
     let m = &result.snapshot()[0];

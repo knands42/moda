@@ -3,19 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Config {
     pub nexus_api_key: String,
     pub mods_root_path: String,
     pub staging_root_path: String,
     pub game_search_paths: HashMap<String, Vec<PathBuf>>,
     pub actual_config_path: PathBuf,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config::new()
-    }
 }
 
 impl Config {
@@ -56,6 +50,13 @@ impl Config {
 }
 
 impl Config {
+    pub fn db_path(&self) -> PathBuf {
+        self.actual_config_path
+            .parent()
+            .expect("Config path must have a parent directory")
+            .join("moda.db")
+    }
+
     pub fn write_new_game_path(&mut self, game_name: &str, path: PathBuf) {
         if let Some(ref mut game_paths) = self.game_search_paths.get_mut(game_name) {
             game_paths.push(path);
