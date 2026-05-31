@@ -3095,6 +3095,7 @@ dependencies = [
  "serde",
  "sevenz-rust2",
  "tempfile",
+ "tokio",
  "toml",
  "turso",
  "unrar",

@@ -1,8 +1,11 @@
-use moda::config::Config;
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use moda::config::Config;
+use moda::mods::repository::{ModRepository, TursoModRepository};
 use tempfile::TempDir;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
@@ -29,4 +32,13 @@ pub fn create_zip(path: &Path, entries: &[&str]) {
         w.write_all(b"content").unwrap();
     }
     w.finish().unwrap();
+}
+
+// --- Repository & ModState test helpers ---
+pub fn new_repo() -> Arc<dyn ModRepository> {
+    let tmp_dir = Box::new(TempDir::new().unwrap());
+    let config = make_config(&tmp_dir);
+    let repo = TursoModRepository::new(&config).unwrap();
+    Box::leak(tmp_dir);
+    repo
 }

@@ -1,15 +1,16 @@
+use std::sync::Arc;
+
+use crate::mods::repository::ModRepository;
 use crate::mods::types::{ModEntry, ModStatus, ReconciledMod};
 use std::collections::HashMap;
-use crate::mods::repository::ModRepository;
 
 pub struct ModState {
     mods: HashMap<String, ReconciledMod>,
-    repository: Box<dyn ModRepository>
+    repository: Arc<dyn ModRepository>,
 }
 
 impl ModState {
-    pub fn new(mods: HashMap<String, ReconciledMod>) -> Self {
-        let repository = todo!();
+    pub fn new(mods: HashMap<String, ReconciledMod>, repository: Arc<dyn ModRepository>) -> Self {
         Self { mods, repository }
     }
 }
@@ -20,6 +21,7 @@ impl ModState {
             m.status = ModStatus::Staged;
             m.staging_entry = Some(mod_entry.clone());
             m.game_entry = None;
+            let _ = self.repository.upsert_mod(&m.register_id, m);
         }
     }
 
@@ -29,6 +31,7 @@ impl ModState {
             m.source_entry = Some(mod_entry.clone());
             m.staging_entry = None;
             m.game_entry = None;
+            let _ = self.repository.upsert_mod(&m.register_id, m);
         }
     }
 
@@ -36,6 +39,7 @@ impl ModState {
         if let Some(m) = self.mods.get_mut(&mod_entry.name) {
             m.status = ModStatus::Enabled;
             m.game_entry = Some(mod_entry.clone());
+            let _ = self.repository.upsert_mod(&m.register_id, m);
         }
     }
 
@@ -44,6 +48,7 @@ impl ModState {
             m.staging_entry = None;
             m.game_entry = None;
             m.status = ModStatus::Downloaded;
+            let _ = self.repository.upsert_mod(&m.register_id, m);
         }
     }
 
@@ -51,11 +56,18 @@ impl ModState {
         if let Some(m) = self.mods.get_mut(name) {
             m.game_entry = None;
             m.status = ModStatus::Staged;
+            let _ = self.repository.upsert_mod(&m.register_id, m);
         }
     }
 
     pub fn remove(&mut self, name: &str) {
+        let register_id = self
+            .mods
+            .get(name)
+            .map(|m| m.register_id.clone())
+            .unwrap_or_default();
         self.mods.remove(name);
+        let _ = self.repository.remove_mod(&register_id, name);
     }
 
     pub fn get_mods(&self) -> impl Iterator<Item = &ReconciledMod> {

@@ -1,10 +1,14 @@
-use crate::mods::test_util::{create_zip, make_config};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
+
+use tempfile::TempDir;
+
 use moda::games::StardewValley;
 use moda::mods::types::{ModEntry, ModStatus, ReconciledMod};
 use moda::mods::{ModEntryKind, ModState, SyncManager};
-use std::fs;
-use std::path::PathBuf;
-use tempfile::TempDir;
+
+use crate::mods::test_util::{create_zip, make_config, new_repo};
 
 fn make_game(game_path: PathBuf) -> StardewValley {
     fs::create_dir_all(&game_path).unwrap();
@@ -14,7 +18,11 @@ fn make_game(game_path: PathBuf) -> StardewValley {
 
 fn reconciled_mods_from_vec(mods: Vec<ReconciledMod>) -> ModState {
     let mods = mods.into_iter().map(|m| (m.name.clone(), m)).collect();
-    ModState::new(mods)
+    ModState::new(mods, new_repo())
+}
+
+fn empty_state() -> ModState {
+    ModState::new(HashMap::new(), new_repo())
 }
 
 #[test]
@@ -51,6 +59,7 @@ fn test_stage_one_mod_zip() {
         }),
         staging_entry: None,
         game_entry: None,
+        register_id: String::new(),
     }]);
 
     let entry = ModEntry {
@@ -105,6 +114,7 @@ fn test_stage_one_mod_zip_with_wrap_directory() {
         }),
         staging_entry: None,
         game_entry: None,
+        register_id: String::new(),
     }]);
 
     let entry = ModEntry {
@@ -144,7 +154,7 @@ fn test_enable_one_mod_source_not_found() {
 
     let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
-    let mut state = ModState::default();
+    let mut state = empty_state();
 
     let entry = ModEntry {
         name: "Nonexistent".to_string(),
@@ -174,7 +184,7 @@ fn test_unstage_one_mod_nonexistent_path() {
 
     let game = make_game(temp.path().join("game"));
     let manager = SyncManager::new(game, config);
-    let mut state = ModState::default();
+    let mut state = empty_state();
 
     let entry = ModEntry {
         name: "NonExistentMod".to_string(),
@@ -251,6 +261,7 @@ fn test_unstage_mods_batch() {
                 metadata: None,
             }),
             game_entry: None,
+            register_id: String::new(),
         },
         ReconciledMod {
             name: "ModB".to_string(),
@@ -263,6 +274,7 @@ fn test_unstage_mods_batch() {
                 metadata: None,
             }),
             game_entry: None,
+            register_id: String::new(),
         },
         ReconciledMod {
             name: "ModC".to_string(),
@@ -285,6 +297,7 @@ fn test_unstage_mods_batch() {
                 kind: ModEntryKind::Directory,
                 metadata: None,
             }),
+            register_id: String::new(),
         },
         ReconciledMod {
             name: "ModD".to_string(),
@@ -297,6 +310,7 @@ fn test_unstage_mods_batch() {
                 metadata: None,
             }),
             game_entry: None,
+            register_id: String::new(),
         },
     ]);
 
@@ -375,6 +389,7 @@ fn test_disable_one_mod_not_in_staging_but_in_downloads() {
             kind: ModEntryKind::Directory,
             metadata: None,
         }),
+        register_id: String::new(),
     }]);
 
     let entry = ModEntry {
@@ -426,6 +441,7 @@ fn test_disable_one_mod_only_in_game_mods() {
             kind: ModEntryKind::Directory,
             metadata: None,
         }),
+        register_id: String::new(),
     }]);
 
     let entry = ModEntry {
@@ -454,7 +470,7 @@ fn test_disable_one_mod_nonexistent_game_mod() {
 
     let game = make_game(game_path.clone());
     let manager = SyncManager::new(game, config);
-    let mut state = ModState::default();
+    let mut state = empty_state();
 
     let entry = ModEntry {
         name: "NonExistent".to_string(),
@@ -521,6 +537,7 @@ fn test_disable_mods_batch() {
                 kind: ModEntryKind::Directory,
                 metadata: None,
             }),
+            register_id: String::new(),
         },
         ReconciledMod {
             name: "ModB".to_string(),
@@ -538,6 +555,7 @@ fn test_disable_mods_batch() {
                 kind: ModEntryKind::Directory,
                 metadata: None,
             }),
+            register_id: String::new(),
         },
     ]);
 
@@ -604,6 +622,7 @@ fn test_sync_all_multiple_statuses() {
             }),
             staging_entry: None,
             game_entry: None,
+            register_id: String::new(),
         },
         ReconciledMod {
             name: "ModB".to_string(),
@@ -616,6 +635,7 @@ fn test_sync_all_multiple_statuses() {
                 metadata: None,
             }),
             game_entry: None,
+            register_id: String::new(),
         },
         ReconciledMod {
             name: "ModC".to_string(),
@@ -633,6 +653,7 @@ fn test_sync_all_multiple_statuses() {
                 kind: ModEntryKind::Directory,
                 metadata: None,
             }),
+            register_id: String::new(),
         },
     ]);
 

@@ -1,39 +1,50 @@
-use crate::config::Config;
-use crate::error::ModManagerError;
-use crate::mods::mod_state::ModState;
-use crate::mods::stager::{strip_rar_ext, strip_zip_ext, RarStager, Stager, ZipStager};
-use crate::mods::types::{
-    allowed_extensions, map_ext_to_kind, ModEntry, ModEntryKind, ModStatus, ReconciledMod,
-};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use crate::config::Config;
+use crate::error::ModManagerError;
+use crate::mods::mod_state::ModState;
+use crate::mods::repository::{ModRepository, TursoModRepository};
+use crate::mods::stager::{strip_rar_ext, strip_zip_ext, RarStager, Stager, ZipStager};
+use crate::mods::types::{
+    allowed_extensions, map_ext_to_kind, ModEntry, ModEntryKind, ModStatus, ReconciledMod,
+};
 
 pub struct Catalog {
     config: Config,
     registry_id: &'static str,
+    repository: Arc<dyn ModRepository>,
 }
 
-// TODO: store on a sqlite db
 impl Catalog {
     pub fn new(config: Config, registry_id: &'static str) -> Self {
-        log::debug!("ModRegistry created for game: {}", registry_id);
+        let repository = TursoModRepository::new(&config).expect("Failed to initialize database");
+        log::debug!("Catalog created for game: {}", registry_id);
         Self {
             config,
             registry_id,
+            repository,
         }
     }
 
     pub fn reconcile_from_db(&self) -> Result<ModState, ModManagerError> {
-        todo!()
+        let db_mods = self.repository.get_mods(self.registry_id)?;
+        let reconciled: HashMap<String, ReconciledMod> =
+            db_mods.into_iter().map(|m| (m.name.clone(), m)).collect();
+        Ok(ModState::new(reconciled, self.repository.clone()))
     }
 
-    pub fn reconcile_from_filesystem(&self, game_mod_path: &Path) -> Result<ModState, ModManagerError> {
+    pub fn reconcile_from_filesystem(
+        &self,
+        game_mod_path: &Path,
+    ) -> Result<ModState, ModManagerError> {
         log::info!("Reconciling mods against {}", game_mod_path.display());
         let source_mods = self.list_mods_folder()?;
         let staged_mods = self.list_staging_folder()?;
-        let enabled_mods = self.list_game_mods_folder(game_mod_path)?; // TODO: how to track direct_copy files on the game folder (cant rely on catalog if I need to reconcile)
+        let enabled_mods = self.list_game_mods_folder(game_mod_path)?;
 
         // Map effective name → source entry
         let src_by_name: HashMap<String, ModEntry> = source_mods
@@ -44,10 +55,22 @@ impl Catalog {
             .iter()
             .map(|m| (m.name.clone(), m.clone()))
             .collect();
-        let ena_by_name: HashMap<String, ModEntry> = enabled_mods
+        let mut ena_by_name: HashMap<String, ModEntry> = enabled_mods
             .iter()
             .map(|m| (m.name.clone(), m.clone()))
             .collect();
+
+        // Supplement with DB entries: mods recorded as enabled whose game_entry
+        // still exists on disk but aren't symlinks (e.g., direct_copy_enabler)
+        if let Ok(db_mods) = self.repository.get_mods(self.registry_id) {
+            for db_m in &db_mods {
+                if let Some(game_entry) = &db_m.game_entry {
+                    if game_entry.path.exists() && !ena_by_name.contains_key(&db_m.name) {
+                        ena_by_name.insert(db_m.name.clone(), game_entry.clone());
+                    }
+                }
+            }
+        }
 
         // Centralized list of all mods
         let mut names: Vec<String> = src_by_name.keys().cloned().collect();
@@ -89,11 +112,12 @@ impl Catalog {
                     source_entry: src,
                     staging_entry: stg,
                     game_entry: ena,
+                    register_id: self.registry_id.to_string(),
                 },
             );
         }
 
-        Ok(ModState::new(reconciled))
+        Ok(ModState::new(reconciled, self.repository.clone()))
     }
 
     fn list_game_mods_folder(
@@ -170,9 +194,8 @@ impl Catalog {
                     metadata: None,
                 });
             } else if entry.file_type()?.is_dir() {
-                let name = &name;
                 entries.push(ModEntry {
-                    name: name.clone(),
+                    name,
                     path,
                     kind: ModEntryKind::Directory,
                     metadata: None,

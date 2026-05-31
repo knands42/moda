@@ -1,7 +1,7 @@
 use crate::mods::test_util::{create_zip, make_config};
 use moda::mods::catalog::Catalog;
-use moda::mods::types::ModStatus;
-use moda::mods::ModEntryKind;
+use moda::mods::repository::{ModRepository, TursoModRepository};
+use moda::mods::types::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
 use std::fs;
 use tempfile::TempDir;
 
@@ -153,6 +153,86 @@ fn test_reconcile_zip_variants() {
         .unwrap()
         .path
         .ends_with("mods/stardew_valley/Mixed-1.0.0.zip"));
+}
+
+#[test]
+fn test_reconcile_enabled_via_direct_copy_db_backed() {
+    let temp = TempDir::new().unwrap();
+    let game_path = temp.path().join("game").join("Mods");
+    let mods_path = temp
+        .path()
+        .join(".moda")
+        .join("mods")
+        .join("stardew_valley");
+    let staging_path = temp
+        .path()
+        .join(".moda")
+        .join("staging")
+        .join("stardew_valley");
+    fs::create_dir_all(&mods_path).unwrap();
+    fs::create_dir_all(&staging_path).unwrap();
+    fs::create_dir_all(&game_path).unwrap();
+
+    // Source and staging exist, game has a direct copy (not symlink)
+    fs::create_dir(mods_path.join("SomeMod")).unwrap();
+    fs::create_dir(staging_path.join("SomeMod")).unwrap();
+    fs::create_dir(game_path.join("SomeMod")).unwrap();
+
+    // Pre-populate DB with the mod as Enabled, with game_entry
+    let config = make_config(&temp);
+    let repo = TursoModRepository::new(&config).unwrap();
+    let game_entry = ModEntry {
+        name: "SomeMod".to_string(),
+        path: game_path.join("SomeMod"),
+        kind: ModEntryKind::Directory,
+        metadata: None,
+    };
+    let reconciled = ReconciledMod {
+        name: "SomeMod".to_string(),
+        status: ModStatus::Enabled,
+        source_entry: None,
+        staging_entry: None,
+        game_entry: Some(game_entry),
+        register_id: "stardew_valley".to_string(),
+    };
+    repo.upsert_mod("stardew_valley", &reconciled).unwrap();
+    drop(repo);
+
+    // Now reconcile — Catalog opens the same DB
+    let catalog = Catalog::new(config, "stardew_valley");
+    let result = catalog.reconcile_from_filesystem(&game_path).unwrap();
+
+    assert_eq!(result.snapshot().len(), 1);
+    let m = &result.snapshot()[0];
+    assert_eq!(m.name, "SomeMod");
+    assert_eq!(m.status, ModStatus::Enabled);
+    assert_eq!(
+        m.source_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(m
+        .source_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("mods/stardew_valley/SomeMod"));
+    assert_eq!(
+        m.staging_entry.as_ref().unwrap().kind,
+        ModEntryKind::Directory
+    );
+    assert!(m
+        .staging_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("staging/stardew_valley/SomeMod"));
+    assert_eq!(m.game_entry.as_ref().unwrap().kind, ModEntryKind::Directory);
+    assert!(m
+        .game_entry
+        .as_ref()
+        .unwrap()
+        .path
+        .ends_with("game/Mods/SomeMod"));
 }
 
 #[test]
@@ -540,3 +620,5 @@ fn test_reconcile_enabled_with_staging_only_no_source() {
         .path
         .ends_with("game/Mods/SomeMod"));
 }
+
+// TODO: Make tests reconciling from db

@@ -53,7 +53,7 @@ impl Stager for ZipStager {
             )))
         }
     }
-    
+
     fn stage(entry: &ModEntry, staging_path: &Path) -> Result<ModEntry, ModManagerError> {
         let (name, target) = match Self::get_mod_name(&entry.path) {
             Ok(dir) => (dir, staging_path.to_path_buf()),
@@ -84,7 +84,7 @@ impl ZipStager {
         log::info!("Staging complete: {} entries", count_entries(target));
         Ok(())
     }
-    
+
     fn process_archive(file_path: &Path, target: &Path) -> Result<(), ModManagerError> {
         let file = File::open(file_path)
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;

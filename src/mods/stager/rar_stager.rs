@@ -47,7 +47,7 @@ impl Stager for RarStager {
             )))
         }
     }
-    
+
     fn stage(entry: &ModEntry, staging_path: &Path) -> Result<ModEntry, ModManagerError> {
         let (name, target) = match Self::get_mod_name(&entry.path) {
             Ok(dir) => (dir, staging_path.to_path_buf()),
@@ -73,7 +73,7 @@ impl RarStager {
             source.display(),
             target.display()
         );
-        
+
         let archive = Archive::new(source)
             .open_for_processing()
             .map_err(|e| ModManagerError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))?;

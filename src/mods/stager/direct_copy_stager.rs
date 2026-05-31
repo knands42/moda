@@ -1,8 +1,8 @@
 use crate::error::ModManagerError;
 use crate::mods::stager::Stager;
+use crate::mods::{strip_rar_ext, ModEntry, ModEntryKind};
 use std::io;
 use std::path::Path;
-use crate::mods::{strip_rar_ext, ModEntry, ModEntryKind};
 
 pub struct DirectCopyStager;
 
@@ -34,7 +34,7 @@ impl DirectCopyStager {
             source.display(),
             target.display()
         );
-        
+
         std::fs::create_dir_all(target)?;
 
         for entry in std::fs::read_dir(source)? {

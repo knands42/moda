@@ -2,11 +2,11 @@ pub mod direct_copy_stager;
 pub mod rar_stager;
 pub mod zip_stager;
 
-use std::io;
 use crate::error::ModManagerError;
 use crate::mods::types::{ModEntry, ModEntryKind};
 pub use direct_copy_stager::*;
 pub use rar_stager::{strip_rar_ext, RarStager};
+use std::io;
 use std::path::Path;
 pub use zip_stager::{strip_zip_ext, ZipStager};
 

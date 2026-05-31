@@ -3,9 +3,9 @@ pub mod downloader;
 pub mod enabler;
 mod mod_state;
 mod orchestrator;
+pub mod repository;
 pub mod stager;
 pub mod types;
-pub mod repository;
 
 use std::path::Path;
 

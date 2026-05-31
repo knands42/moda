@@ -1,3 +1,4 @@
+use crate::mods::test_util::new_repo;
 use moda::mods::types::{ModEntry, ModEntryKind, ModStatus, ReconciledMod};
 use moda::mods::ModState;
 use std::collections::HashMap;
@@ -23,18 +24,23 @@ fn make_state(mods: Vec<(&str, ModStatus)>) -> ModState {
                     source_entry: None,
                     staging_entry: None,
                     game_entry: None,
+                    register_id: String::new(),
                 },
             )
         })
         .collect();
-    ModState::new(reconciled)
+    ModState::new(reconciled, new_repo())
+}
+
+fn empty_state() -> ModState {
+    ModState::new(HashMap::new(), new_repo())
 }
 
 // --- empty / new ---
 
 #[test]
 fn test_new_empty() {
-    let state = ModState::new(HashMap::new());
+    let state = ModState::new(HashMap::new(), new_repo());
     assert!(state.snapshot().is_empty());
     assert!(state.get_mods().next().is_none());
 }
@@ -91,7 +97,7 @@ fn test_set_downloaded_from_staged() {
 
 #[test]
 fn test_set_downloaded_nonexistent_is_noop() {
-    let mut state = ModState::default();
+    let mut state = empty_state();
     state.set_downloaded(&make_entry("Ghost", ModEntryKind::Directory));
     assert!(state.snapshot().is_empty());
 }
@@ -112,7 +118,7 @@ fn test_set_enabled_from_staged() {
 
 #[test]
 fn test_set_enabled_nonexistent_is_noop() {
-    let mut state = ModState::default();
+    let mut state = empty_state();
     state.set_enabled(&make_entry("Ghost", ModEntryKind::Directory));
     assert!(state.snapshot().is_empty());
 }
@@ -133,7 +139,7 @@ fn test_set_unstaged_clears_entries_and_reverts_to_downloaded() {
 
 #[test]
 fn test_set_unstaged_nonexistent_is_noop() {
-    let mut state = ModState::default();
+    let mut state = empty_state();
     state.set_unstaged("Ghost");
     assert!(state.snapshot().is_empty());
 }
@@ -153,7 +159,7 @@ fn test_set_disabled_from_enabled() {
 
 #[test]
 fn test_set_disabled_nonexistent_is_noop() {
-    let mut state = ModState::default();
+    let mut state = empty_state();
     state.set_disabled("Ghost");
     assert!(state.snapshot().is_empty());
 }
@@ -228,10 +234,11 @@ fn test_snapshot_returns_sorted_copy() {
                 source_entry: None,
                 staging_entry: None,
                 game_entry: None,
+                register_id: String::new(),
             },
         );
     }
-    let state = ModState::new(reconciled);
+    let state = ModState::new(reconciled, new_repo());
 
     let snapshot = state.snapshot();
     assert_eq!(snapshot.len(), 3);

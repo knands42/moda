@@ -31,6 +31,7 @@ pub enum ModStatus {
 #[derive(Clone, Debug)]
 pub struct ReconciledMod {
     pub name: String,
+    pub register_id: String,
     pub status: ModStatus,
     pub source_entry: Option<ModEntry>,
     pub staging_entry: Option<ModEntry>,
