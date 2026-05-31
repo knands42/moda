@@ -1,1 +1,1 @@
-mod enabler_test;
+mod symlink_enabler_test;

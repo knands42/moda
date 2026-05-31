@@ -142,6 +142,7 @@ fn render_downloads_tab(
                             ui.label(
                                 egui::RichText::new(match source.kind {
                                     ModEntryKind::ZipArchive => "ZIP",
+                                    ModEntryKind::RarArchive => "RAR",
                                     ModEntryKind::Directory => "Folder",
                                     ModEntryKind::Other => "Other",
                                 })

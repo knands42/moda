@@ -13,7 +13,7 @@ use crate::error::ModManagerError;
 pub use enabler::SymlinkEnabler;
 pub use mod_state::ModState;
 pub use orchestrator::{SyncManager, SyncManagerOps};
-pub use stager::{strip_zip_ext, DirectCopyStager, Stager, ZipStager};
+pub use stager::{strip_rar_ext, strip_zip_ext, DirectCopyStager, RarStager, Stager, ZipStager};
 pub use types::{allowed_extensions, map_ext_to_kind, ModEntry, ModEntryKind, ModMetadata};
 
 impl ModEntryKind {
@@ -29,6 +29,10 @@ impl ModEntryKind {
             }
             ModEntryKind::ZipArchive => {
                 let entry = ZipStager::stage(mod_entry, staging_path)?;
+                Ok(Some(entry))
+            }
+            ModEntryKind::RarArchive => {
+                let entry = RarStager::stage(mod_entry, staging_path)?;
                 Ok(Some(entry))
             }
             ModEntryKind::Other => Ok(None),

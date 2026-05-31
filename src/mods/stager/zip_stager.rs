@@ -62,11 +62,11 @@ impl Stager for ZipStager {
         );
         Self::install_from_zip(source, target)?;
 
-        log::info!("Install complete: {} entries", count_entries(target));
+        log::info!("Staging complete: {} entries", count_entries(target));
         Ok(())
     }
 
-    fn uninstall(_file_path: &Path) -> Result<(), ModManagerError> {
+    fn unstage(_file_path: &Path) -> Result<(), ModManagerError> {
         todo!()
     }
 

@@ -52,7 +52,7 @@ impl<G: Game> SyncManager<G> {
         let _ = SymlinkEnabler::deactivate(&self.game.game_mod_path().join(&mod_entry.name));
 
         if mod_entry.path.exists() {
-            DirectCopyStager::uninstall(&mod_entry.path)?;
+            DirectCopyStager::unstage(&mod_entry.path)?;
         }
 
         self.resolve_after_unstage(mod_entry, state);

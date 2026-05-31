@@ -15,6 +15,7 @@ pub struct ModEntry {
 pub enum ModEntryKind {
     Directory,
     ZipArchive,
+    RarArchive,
     Other,
 }
 
@@ -43,7 +44,7 @@ pub fn allowed_extensions() -> &'static [&'static str] {
 pub fn map_ext_to_kind(ext: &str) -> ModEntryKind {
     match ext {
         "zip" => ModEntryKind::ZipArchive,
-        "rar" => ModEntryKind::ZipArchive,
+        "rar" => ModEntryKind::RarArchive,
         _ => ModEntryKind::Other,
     }
 }

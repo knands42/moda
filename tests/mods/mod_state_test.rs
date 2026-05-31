@@ -58,12 +58,6 @@ fn test_set_staged_transitions_from_downloaded() {
 #[test]
 fn test_set_staged_clears_game_entry() {
     let mut state = make_state(vec![("SomeMod", ModStatus::Enabled)]);
-    // Simulate having a game entry
-    {
-        let m = state.get_mod("SomeMod").unwrap();
-        drop(m);
-        // Direct mutation via get_mod isn't possible, so we use snapshot
-    }
     let entry = make_entry("SomeMod", ModEntryKind::Directory);
     state.set_staged(&entry);
 

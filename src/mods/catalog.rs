@@ -1,8 +1,10 @@
 use crate::config::Config;
 use crate::error::ModManagerError;
 use crate::mods::mod_state::ModState;
-use crate::mods::stager::{strip_zip_ext, Stager, ZipStager};
-use crate::mods::types::{allowed_extensions, ModEntry, ModEntryKind, ModStatus, ReconciledMod};
+use crate::mods::stager::{strip_rar_ext, strip_zip_ext, RarStager, Stager, ZipStager};
+use crate::mods::types::{
+    allowed_extensions, map_ext_to_kind, ModEntry, ModEntryKind, ModStatus, ReconciledMod,
+};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
@@ -153,22 +155,21 @@ impl Catalog {
                 .into_string()
                 .map_err(|e| ModManagerError::InvalidFilename(e.into_string().unwrap()))?;
 
-            if entry
-                .path()
-                .extension()
-                .and_then(OsStr::to_str)
-                .is_some_and(|s| allowed_extensions().contains(&s))
-            {
+            let path = entry.path();
+            let ext = path.extension().and_then(OsStr::to_str);
+            if ext.is_some_and(|s| allowed_extensions().contains(&s)) {
+                let kind = map_ext_to_kind(ext.unwrap());
                 entries.push(ModEntry {
                     name,
-                    path: entry.path(),
-                    kind: ModEntryKind::ZipArchive,
+                    path,
+                    kind,
                     metadata: None,
                 });
             } else if entry.file_type()?.is_dir() {
+                let name = &name;
                 entries.push(ModEntry {
-                    name,
-                    path: entry.path(),
+                    name: name.clone(),
+                    path,
                     kind: ModEntryKind::Directory,
                     metadata: None,
                 });
@@ -176,7 +177,7 @@ impl Catalog {
                 log::warn!(
                     "Mod {} uses an unsupported file extension: Skipping unsupported file: {}",
                     name,
-                    entry.path().display()
+                    path.display()
                 );
             }
         }
@@ -186,10 +187,14 @@ impl Catalog {
 }
 
 fn effective_name(entry: &ModEntry) -> String {
-    if entry.kind == ModEntryKind::ZipArchive {
-        ZipStager::get_mod_name(&entry.path).unwrap_or_else(|_| strip_zip_ext(&entry.name))
-    } else {
-        entry.name.clone()
+    match entry.kind {
+        ModEntryKind::ZipArchive => {
+            ZipStager::get_mod_name(&entry.path).unwrap_or_else(|_| strip_zip_ext(&entry.name))
+        }
+        ModEntryKind::RarArchive => {
+            RarStager::get_mod_name(&entry.path).unwrap_or_else(|_| strip_rar_ext(&entry.name))
+        }
+        _ => entry.name.clone(),
     }
 }
 

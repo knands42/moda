@@ -23,7 +23,7 @@ impl Stager for DirectCopyStager {
         Self::copy_dir_recursive(source, target)
     }
 
-    fn uninstall(file_path: &Path) -> Result<(), ModManagerError> {
+    fn unstage(file_path: &Path) -> Result<(), ModManagerError> {
         match std::fs::remove_dir_all(file_path) {
             Ok(_) => {
                 log::info!("Uninstalled {}", file_path.display());
